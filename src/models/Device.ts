@@ -1,3 +1,9 @@
+const presets = [
+  { label: "自定义", value: 0 },
+  { label: "腾讯网游加速器", value: 1 },
+  { label: "网易 UU 加速器", value: 2 },
+];
+
 class Device {
   public preset: number;
   public source: string;
@@ -10,12 +16,7 @@ class Device {
   }
 
   validate = () => {
-    if (
-      !Number.isInteger(this.preset) ||
-      this.preset < 0 ||
-      this.preset > 2 ||
-      this.source.length === 0
-    ) {
+    if (!Number.isInteger(this.preset) || this.preset < 0 || this.preset > 2 || this.source.length === 0) {
       return false;
     }
 
@@ -23,11 +24,7 @@ class Device {
   };
 
   static from = (data: any) => {
-    if (
-      typeof data.preset === "number" &&
-      typeof data.source === "string" &&
-      typeof data.publish === "string"
-    ) {
+    if (typeof data.preset === "number" && typeof data.source === "string" && typeof data.publish === "string") {
       const device = new Device(data.preset, data.source, data.publish);
 
       return device.validate() ? device : null;
@@ -58,4 +55,4 @@ class Device {
   };
 }
 
-export default Device;
+export { presets, Device };

@@ -4,25 +4,18 @@ import { Row, Col, Collapse } from "antd";
 const { Panel } = Collapse;
 
 type Props = {
+  gutter: number;
   accordion?: boolean;
   panels?: { label: string; text: string }[];
   tail?: boolean;
 };
 
 class RowCollapse extends React.Component<Props, {}> {
-  static defaultProps = { panels: [], tail: false };
-
-  getGutter = () => {
-    if (this.props.tail) {
-      return 16;
-    } else {
-      return [16, 16];
-    }
-  };
+  static defaultProps = { gutter: 8, panels: [], tail: false };
 
   render() {
     return (
-      <Row gutter={[16, this.props.tail ? 0 : 16]}>
+      <Row gutter={[this.props.gutter, this.props.tail ? 0 : this.props.gutter]}>
         <Col span={24}>
           <Collapse accordion={this.props.accordion} ghost>
             {() => {

@@ -22,8 +22,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# vscode directories
+# vscode and plugins
 /.vscode
+.prettierrc.js
 
 # bin and libraries
 *.exe

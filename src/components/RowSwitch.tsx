@@ -1,15 +1,14 @@
 import React from "react";
-import { Row, Col, Select, Tooltip } from "antd";
+import { Row, Col, Switch, Tooltip } from "antd";
 
 type Props = {
   gutter: number;
   offset: number;
   label?: string;
   tooltip?: string | number | boolean | React.ReactNode;
-  options?: { label: string; value: any }[];
   valueTooltip?: string | number | boolean | React.ReactNode;
-  value?: any;
-  onChange?: ((value: any) => void) | undefined;
+  value?: boolean;
+  onChange?: ((value: boolean) => void) | undefined;
   tail?: boolean;
 };
 
@@ -29,17 +28,15 @@ class RowSelect extends React.Component<Props, {}> {
             <span style={{ marginLeft: this.props.offset + "px" }}>{this.props.label}</span>
           </Tooltip>
         </Col>
-        <Col span={16}>
+        <Col span={16} style={{ display: "flex" }}>
           <Tooltip title={this.props.valueTooltip}>
-            <Select
-              options={this.props.options}
-              value={this.props.value}
+            <Switch
+              checked={this.props.value}
               onChange={(value) => {
                 if (this.props.onChange) {
                   this.props.onChange(value);
                 }
               }}
-              style={{ width: "100%" }}
             />
           </Tooltip>
         </Col>

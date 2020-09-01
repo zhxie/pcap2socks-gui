@@ -2,7 +2,8 @@ import React from "react";
 import { Row, Col, Button } from "antd";
 
 type Props = {
-  offset?: number;
+  gutter: number;
+  offset: number;
   label?: string;
   type?: "default" | "primary";
   danger?: boolean;
@@ -15,7 +16,8 @@ type Props = {
 
 class RowButton extends React.Component<Props, {}> {
   static defaultProps = {
-    offset: 24,
+    gutter: 8,
+    offset: 0,
     type: "default",
     danger: false,
     disabled: false,
@@ -25,20 +27,12 @@ class RowButton extends React.Component<Props, {}> {
 
   render() {
     return (
-      <Row gutter={[16, this.props.tail ? 0 : 16]}>
-        <Col span={8}>
-          <span style={{ marginLeft: this.props.offset + "px" }}>
-            {this.props.label}
-          </span>
+      <Row gutter={[this.props.gutter, this.props.tail ? 0 : this.props.gutter]}>
+        <Col span={8} style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ marginLeft: this.props.offset + "px" }}>{this.props.label}</span>
         </Col>
         <Col span={16}>
-          <Button
-            type={this.props.type}
-            danger={this.props.danger}
-            disabled={this.props.disabled}
-            loading={this.props.loading}
-            onClick={this.props.onClick}
-          >
+          <Button type={this.props.type} danger={this.props.danger} disabled={this.props.disabled} loading={this.props.loading} onClick={this.props.onClick}>
             {this.props.text}
           </Button>
         </Col>
