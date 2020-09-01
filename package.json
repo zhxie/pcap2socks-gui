@@ -1,6 +1,15 @@
 {
   "name": "pcap2socks-gui",
   "version": "0.1.0",
+  "description": "A front-end interface for pcap2socks.",
+  "license": "MIT",
+  "author": {
+    "name": "Xie Zhihao"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhxie/pcap2socks-gui.git"
+  },
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
@@ -10,9 +19,11 @@
     "@types/node": "^12.0.0",
     "@types/react": "^16.9.0",
     "@types/react-dom": "^16.9.0",
+    "antd": "^4.6.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.3",
+    "tauri": "^0.12.0",
     "typescript": "~3.7.2"
   },
   "scripts": {
@@ -35,5 +46,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "babel-plugin-import": "^1.13.0",
+    "cross-env": "^7.0.2",
+    "customize-cra": "^1.0.0",
+    "react-app-rewired": "^2.1.6"
   }
 }
