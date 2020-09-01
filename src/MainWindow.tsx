@@ -22,6 +22,10 @@ const STAGE_DEVICE: number = 2;
 const STAGE_PROXY: number = 3;
 const STAGE_RUNNING: number = 4;
 
+const ipc = async (args: any): Promise<any> => {
+  return JSON.parse(await promisified(args));
+};
+
 type State = {
   // Status
   stage: number;
@@ -127,6 +131,87 @@ class MainWindow extends React.Component<{}, State> {
     a.rel = "noopener";
     a.href = URL.createObjectURL(new Blob([proxy.stringify()], { type: "application/json" }));
     a.dispatchEvent(new MouseEvent("click"));
+  };
+
+  run = async () => {
+    const inter = Interface.from(this.state);
+    if (!inter) {
+      notification.error({
+        message: "无法运行",
+        description: "此网卡配置是无效的。",
+      });
+      return;
+    }
+
+    const device = Device.from(this.state);
+    if (!device) {
+      notification.error({
+        message: "无法运行",
+        description: "此设备配置是无效的。",
+      });
+      return;
+    }
+
+    const proxy = Proxy.from(this.state);
+    if (!proxy) {
+      notification.error({
+        message: "无法运行",
+        description: "此代理配置是无效的。",
+      });
+      return;
+    }
+
+    const payload = {
+      interface: inter.interface,
+      mtu: inter.mtu,
+      preset: device.preset,
+      source: device.source,
+      publish: device.publish,
+      destination: proxy.destination,
+      authentication: proxy.authentication,
+      username: proxy.username,
+      password: proxy.password,
+      extra: proxy.extra,
+    };
+
+    let result: { result: boolean; message: string } = await ipc({ cmd: "run", payload: payload });
+
+    if (result.result) {
+      this.setState({
+        stage: STAGE_RUNNING,
+        loading: false,
+        ready: true,
+      });
+    } else {
+      this.setState({ loading: false, ready: false });
+      notification.error({
+        message: "运行失败",
+        description: result.message,
+      });
+    }
+  };
+
+  stop = async () => {
+    this.setState({ loading: true });
+
+    let result: { result: boolean; message: string } = await ipc({ cmd: "stop" });
+
+    if (result.result) {
+      this.setState({
+        stage: STAGE_WELCOME,
+        loading: false,
+        time: undefined,
+        latency: undefined,
+        upload: undefined,
+        download: undefined,
+      });
+    } else {
+      this.setState({ loading: false });
+      notification.error({
+        message: "停止运行失败",
+        description: result.message,
+      });
+    }
   };
 
   renderWelcome = () => {
@@ -375,7 +460,7 @@ class MainWindow extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_WELCOME && this.state.ready) {
                 return (
-                  <Button className="button" type="primary" icon={<PlayCircleOutlined />}>
+                  <Button className="button" type="primary" icon={<PlayCircleOutlined />} onClick={this.run}>
                     以上次的配置运行
                   </Button>
                 );
@@ -393,7 +478,7 @@ class MainWindow extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_PROXY) {
                 return (
-                  <Button className="button" type="primary" icon={<PoweroffOutlined />}>
+                  <Button className="button" type="primary" icon={<PoweroffOutlined />} onClick={this.run}>
                     运行
                   </Button>
                 );
@@ -402,7 +487,7 @@ class MainWindow extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_RUNNING) {
                 return (
-                  <Button className="button" type="primary" danger icon={<PoweroffOutlined />}>
+                  <Button className="button" type="primary" danger icon={<PoweroffOutlined />} onClick={this.stop}>
                     停止
                   </Button>
                 );
@@ -412,6 +497,79 @@ class MainWindow extends React.Component<{}, State> {
         </Content>
       </Layout>
     );
+  }
+
+  async componentDidMount() {
+    let ready = 0;
+
+    // Load device from local storage
+    const deviceText = localStorage.getItem("device");
+    if (deviceText) {
+      const device = Device.parse(deviceText);
+      if (device) {
+        this.setState({
+          preset: device.preset,
+          source: device.source,
+          publish: device.publish,
+        });
+        ready++;
+      }
+    }
+
+    // Load proxy from local storage
+    const proxyText = localStorage.getItem("proxy");
+    if (proxyText) {
+      const proxy = Proxy.parse(proxyText);
+      if (proxy) {
+        this.setState({
+          destination: proxy.destination,
+          authentication: proxy.authentication,
+          username: proxy.username,
+          password: proxy.password,
+          extra: proxy.extra,
+        });
+        ready++;
+      }
+    }
+
+    // Load interfaces
+    try {
+      let interfaces: { name: string; alias: string }[] = await ipc({ cmd: "listInterfaces" });
+      if (interfaces.length <= 0) {
+        notification.error({
+          message: "无网卡",
+          description: "pcap2socks 无法在此设备中找到任何有效的网卡。",
+        });
+      } else {
+        this.setState({ interfaces: interfaces, interface: interfaces[0].name });
+
+        // Load interface from local storage
+        const interText = localStorage.getItem("interface");
+        if (interText) {
+          const inter = Interface.parse(interText);
+          if (inter) {
+            let exist = interfaces.findIndex((ele) => ele.name === inter.interface) > -1;
+            if (exist) {
+              this.setState({
+                interface: inter.interface,
+                mtu: inter.mtu,
+                ready: ready === 2,
+              });
+            } else {
+              notification.warn({
+                message: "网卡已更新",
+                description: "您的网卡自上次运行以来已发生变化，请重新配置 pcap2socks。",
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      notification.error({
+        message: "未知错误",
+        description: e.message,
+      });
+    }
   }
 }
 
