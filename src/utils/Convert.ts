@@ -1,14 +1,16 @@
 class Convert {
   static convertTime = (time: number) => {
-    const hour = Math.floor(time / 3600);
-    const min = Math.floor((time - 3600 * hour) / 60);
-    const second = time - 3600 * hour - 60 * min;
-    if (hour !== 0) {
-      return (
-        hour + ":" + ("0" + min).substr(-2) + ":" + ("0" + second).substr(-2)
-      );
+    if (Number.isNaN(time) || Number.isFinite(time)) {
+      return "-";
     } else {
-      return ("0" + min).substr(-2) + ":" + ("0" + second).substr(-2);
+      const hour = Math.floor(time / 3600);
+      const min = Math.floor((time - 3600 * hour) / 60);
+      const second = time - 3600 * hour - 60 * min;
+      if (hour !== 0) {
+        return hour + ":" + ("0" + min).substr(-2) + ":" + ("0" + second).substr(-2);
+      } else {
+        return ("0" + min).substr(-2) + ":" + ("0" + second).substr(-2);
+      }
     }
   };
 

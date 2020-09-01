@@ -37,6 +37,10 @@
   font-size: 8em;
 }
 
+.card {
+  cursor: default;
+}
+
 .footer {
   display: flex;
   justify-content: center;

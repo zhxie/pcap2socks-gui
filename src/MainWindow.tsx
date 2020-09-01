@@ -1,17 +1,18 @@
 import React from "react";
-import { notification, Layout, Row, Col, Typography, Button } from "antd";
+import { notification, Layout, Row, Col, Typography, Card, Statistic, Button } from "antd";
 import { LeftOutlined, FolderOpenOutlined, ExportOutlined, PlayCircleOutlined, RightOutlined, PoweroffOutlined } from "@ant-design/icons";
-import { ThunderboltTwoTone, ApiTwoTone, PlaySquareTwoTone, CompassTwoTone } from "@ant-design/icons";
+import { ThunderboltTwoTone, ApiTwoTone, PlaySquareTwoTone, CompassTwoTone, CheckCircleTwoTone } from "@ant-design/icons";
+import { ClockCircleOutlined, HourglassOutlined, ArrowDownOutlined, ArrowUpOutlined } from "@ant-design/icons";
 import { promisified } from "tauri/api/tauri";
 
 import "./MainWindow.css";
 import RowSelect from "./components/RowSelect";
 import RowInput from "./components/RowInput";
 import RowSwitch from "./components/RowSwitch";
-
 import Interface from "./models/Interface";
 import { presets, Device } from "./models/Device";
 import Proxy from "./models/Proxy";
+import Convert from "./utils/Convert";
 
 const { Content } = Layout;
 const { Paragraph, Title } = Typography;
@@ -31,10 +32,10 @@ type State = {
   stage: number;
   loading: boolean;
   ready: boolean;
-  time?: number;
-  latency?: number;
-  upload?: number;
-  download?: number;
+  time: number;
+  latency: number;
+  upload: number;
+  download: number;
   // Parameters
   interfaces: { name: string; alias: string }[];
   // Interface
@@ -57,9 +58,13 @@ class MainWindow extends React.Component<{}, State> {
     super(props);
     this.state = {
       // Status
-      stage: 0,
+      stage: STAGE_WELCOME,
       loading: false,
       ready: false,
+      time: NaN,
+      latency: NaN,
+      upload: NaN,
+      download: NaN,
       // Parameters
       interfaces: [],
       // Interface
@@ -136,6 +141,7 @@ class MainWindow extends React.Component<{}, State> {
   run = async () => {
     const inter = Interface.from(this.state);
     if (!inter) {
+      this.setState({ ready: false });
       notification.error({
         message: "无法运行",
         description: "此网卡配置是无效的。",
@@ -145,6 +151,7 @@ class MainWindow extends React.Component<{}, State> {
 
     const device = Device.from(this.state);
     if (!device) {
+      this.setState({ ready: false });
       notification.error({
         message: "无法运行",
         description: "此设备配置是无效的。",
@@ -154,6 +161,7 @@ class MainWindow extends React.Component<{}, State> {
 
     const proxy = Proxy.from(this.state);
     if (!proxy) {
+      this.setState({ ready: false });
       notification.error({
         message: "无法运行",
         description: "此代理配置是无效的。",
@@ -174,19 +182,27 @@ class MainWindow extends React.Component<{}, State> {
       extra: proxy.extra,
     };
 
-    let result: { result: boolean; message: string } = await ipc({ cmd: "run", payload: payload });
+    try {
+      let result: { result: boolean; message: string } = await ipc({ cmd: "run", payload: payload });
 
-    if (result.result) {
-      this.setState({
-        stage: STAGE_RUNNING,
-        loading: false,
-        ready: true,
-      });
-    } else {
-      this.setState({ loading: false, ready: false });
+      if (result.result) {
+        this.setState({
+          stage: STAGE_RUNNING,
+          loading: false,
+          ready: true,
+        });
+      } else {
+        this.setState({ loading: false, ready: false });
+        notification.error({
+          message: "运行失败",
+          description: result.message,
+        });
+      }
+    } catch (e) {
+      this.setState({ loading: false });
       notification.error({
-        message: "运行失败",
-        description: result.message,
+        message: "未知错误",
+        description: e.message,
       });
     }
   };
@@ -194,22 +210,30 @@ class MainWindow extends React.Component<{}, State> {
   stop = async () => {
     this.setState({ loading: true });
 
-    let result: { result: boolean; message: string } = await ipc({ cmd: "stop" });
+    try {
+      let result: { result: boolean; message: string } = await ipc({ cmd: "stop" });
 
-    if (result.result) {
-      this.setState({
-        stage: STAGE_WELCOME,
-        loading: false,
-        time: undefined,
-        latency: undefined,
-        upload: undefined,
-        download: undefined,
-      });
-    } else {
+      if (result.result) {
+        this.setState({
+          stage: STAGE_WELCOME,
+          loading: false,
+          time: NaN,
+          latency: NaN,
+          upload: NaN,
+          download: NaN,
+        });
+      } else {
+        this.setState({ loading: false });
+        notification.error({
+          message: "停止运行失败",
+          description: result.message,
+        });
+      }
+    } catch (e) {
       this.setState({ loading: false });
       notification.error({
-        message: "停止运行失败",
-        description: result.message,
+        message: "未知错误",
+        description: e.message,
       });
     }
   };
@@ -233,7 +257,6 @@ class MainWindow extends React.Component<{}, State> {
             </Paragraph>
           </Col>
         </Row>
-        <Row gutter={[16, 16]} justify="center"></Row>
       </div>
     );
   };
@@ -403,6 +426,65 @@ class MainWindow extends React.Component<{}, State> {
     );
   };
 
+  renderRunning = () => {
+    return (
+      <div className="content-content">
+        <Row className="content-content-row" gutter={[16, 16]} justify="center">
+          <Col className="content-content-col" span={24}>
+            <CheckCircleTwoTone className="content-content-icon" twoToneColor="#52c41a" />
+          </Col>
+        </Row>
+        <Row className="content-content-row" gutter={[16, 32]} justify="center">
+          <Col className="content-content-col" span={24}>
+            <Paragraph>
+              <Title level={3}>运行中</Title>
+            </Paragraph>
+          </Col>
+        </Row>
+        <Row gutter={[16, 0]} justify="center">
+          <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
+            <Card className="card" hoverable>
+              <Statistic precision={2} prefix={<ClockCircleOutlined />} title="运行时间" value={Convert.convertTime(this.state.time)} />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
+            <Card className="card" hoverable>
+              <Statistic
+                precision={2}
+                prefix={<HourglassOutlined />}
+                title="延迟"
+                value={Convert.convertDuration(this.state.latency)}
+                suffix={Convert.convertDurationUnit(this.state.latency)}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
+            <Card className="card" hoverable>
+              <Statistic
+                precision={2}
+                prefix={<ArrowDownOutlined />}
+                title="下载速度"
+                value={Convert.convertBitrate(this.state.download)}
+                suffix={Convert.convertBitrateUnit(this.state.download)}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
+            <Card className="card" hoverable>
+              <Statistic
+                precision={2}
+                prefix={<ArrowUpOutlined />}
+                title="上传速度"
+                value={Convert.convertBitrate(this.state.upload)}
+                suffix={Convert.convertBitrateUnit(this.state.upload)}
+              />
+            </Card>
+          </Col>
+        </Row>
+      </div>
+    );
+  };
+
   render() {
     return (
       <Layout className="layout">
@@ -418,6 +500,8 @@ class MainWindow extends React.Component<{}, State> {
                   return this.renderDevice();
                 case STAGE_PROXY:
                   return this.renderProxy();
+                case STAGE_RUNNING:
+                  return this.renderRunning();
                 default:
                   return;
               }
