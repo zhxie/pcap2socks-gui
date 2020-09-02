@@ -103,7 +103,7 @@ pub fn test_nat_type(proxy: SocketAddrV4, auth: Option<(String, String)>) -> io:
     let rw: Box<dyn stunxy::RW> = Box::new(datagram);
 
     let server_ip = resolve_ip("stun.ekiga.net")?;
-    let server_addr = SocketAddr::V4(SocketAddrV4::new(server_ip, 3389));
+    let server_addr = SocketAddr::V4(SocketAddrV4::new(server_ip, 3478));
 
     let result = stunxy::nat_test(&rw, server_addr)?;
 
