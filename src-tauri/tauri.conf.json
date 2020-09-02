@@ -10,7 +10,7 @@
   },
   "tauri": {
     "embeddedServer": {
-      "active": false
+      "active": true
     },
     "bundle": {
       "active": false,
@@ -39,8 +39,8 @@
     },
     "window": {
       "title": "pcap2socks",
-      "width": 960,
-      "height": 540,
+      "width": 1280,
+      "height": 720,
       "resizable": true,
       "fullscreen": false
     },
