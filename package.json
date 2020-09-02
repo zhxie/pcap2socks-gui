@@ -31,7 +31,7 @@
     "build": "cross-env GENERATE_SOURCEMAP=false react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-app-rewired eject",
-	"tauri-dev": "tauri dev",
+    "tauri-dev": "tauri dev",
     "tauri": "tauri"
   },
   "eslintConfig": {
