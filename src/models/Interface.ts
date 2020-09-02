@@ -11,8 +11,7 @@ class Interface {
     if (
       this.interface.length === 0 ||
       !Number.isInteger(this.mtu) ||
-      this.mtu < 576 ||
-      this.mtu > 1500
+      ((this.mtu < 576 || this.mtu > 1500) && this.mtu !== 0)
     ) {
       return false;
     }

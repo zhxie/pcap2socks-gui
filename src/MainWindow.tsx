@@ -39,12 +39,10 @@ const STAGE_RUNNING: number = 4;
 
 const ipc = async (args: any): Promise<any> => {
   const result: string = await promisified(args);
-  try {
-    const data = JSON.parse(result);
-
-    return data;
-  } catch (_) {
+  if (typeof result === "string") {
     throw new Error(result);
+  } else {
+    return result;
   }
 };
 
@@ -170,6 +168,7 @@ class MainWindow extends React.Component<{}, State> {
       });
       return;
     }
+    localStorage.setItem("interface", inter.stringify());
 
     const device = Device.from(this.state);
     if (!device) {
@@ -180,6 +179,7 @@ class MainWindow extends React.Component<{}, State> {
       });
       return;
     }
+    localStorage.setItem("device", device.stringify());
 
     const proxy = Proxy.from(this.state);
     if (!proxy) {
@@ -190,6 +190,7 @@ class MainWindow extends React.Component<{}, State> {
       });
       return;
     }
+    localStorage.setItem("proxy", proxy.stringify());
 
     const payload = {
       interface: inter.interface,
@@ -509,7 +510,6 @@ class MainWindow extends React.Component<{}, State> {
           <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
             <Card className="card" hoverable>
               <Statistic
-                precision={2}
                 prefix={<HourglassOutlined />}
                 title="延迟"
                 value={Convert.convertDuration(this.state.latency)}
@@ -607,7 +607,13 @@ class MainWindow extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_WELCOME && this.state.ready) {
                 return (
-                  <Button className="button" type="primary" icon={<PlayCircleOutlined />} onClick={this.run}>
+                  <Button
+                    className="button"
+                    type="primary"
+                    loading={this.state.loading}
+                    icon={<PlayCircleOutlined />}
+                    onClick={this.run}
+                  >
                     以上次的配置运行
                   </Button>
                 );
@@ -630,7 +636,13 @@ class MainWindow extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_PROXY) {
                 return (
-                  <Button className="button" type="primary" icon={<PoweroffOutlined />} onClick={this.run}>
+                  <Button
+                    className="button"
+                    type="primary"
+                    loading={this.state.loading}
+                    icon={<PoweroffOutlined />}
+                    onClick={this.run}
+                  >
                     运行
                   </Button>
                 );
@@ -639,7 +651,14 @@ class MainWindow extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_RUNNING) {
                 return (
-                  <Button className="button" type="primary" danger icon={<PoweroffOutlined />} onClick={this.stop}>
+                  <Button
+                    className="button"
+                    type="primary"
+                    danger
+                    loading={this.state.loading}
+                    icon={<PoweroffOutlined />}
+                    onClick={this.stop}
+                  >
                     停止
                   </Button>
                 );

@@ -1,6 +1,6 @@
 class Convert {
   static convertTime = (time: number) => {
-    if (Number.isNaN(time) || Number.isFinite(time)) {
+    if (Number.isNaN(time) || !Number.isFinite(time)) {
       return "-";
     } else {
       const hour = Math.floor(time / 3600);
@@ -17,7 +17,7 @@ class Convert {
   static convertDuration = (duration: number) => {
     if (Number.isNaN(duration)) {
       return "-";
-    } else if (Number.isFinite(duration)) {
+    } else if (!Number.isFinite(duration)) {
       if (duration > 0) {
         return "∞";
       } else {
@@ -31,7 +31,7 @@ class Convert {
   };
 
   static convertDurationUnit = (duration: number) => {
-    if (Number.isNaN(duration) || Number.isFinite(duration)) {
+    if (Number.isNaN(duration) || !Number.isFinite(duration)) {
       return "";
     } else if (duration > 1000) {
       return "s";
@@ -41,7 +41,7 @@ class Convert {
   };
 
   static convertBitrate = (bitrate: number) => {
-    if (Number.isNaN(bitrate) || Number.isFinite(bitrate)) {
+    if (Number.isNaN(bitrate) || !Number.isFinite(bitrate)) {
       return "-";
     } else if (bitrate > 1024 * 1024 * 1024) {
       return bitrate / (1024 * 1024 * 1024);
@@ -55,7 +55,7 @@ class Convert {
   };
 
   static convertBitrateUnit = (bitrate: number) => {
-    if (Number.isNaN(bitrate) || Number.isFinite(bitrate)) {
+    if (Number.isNaN(bitrate) || !Number.isFinite(bitrate)) {
       return "";
     } else if (bitrate > 1024 * 1024 * 1024) {
       return "GB/s";
