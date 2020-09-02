@@ -1,12 +1,13 @@
 use dnsping::{self, RW as _};
 use ipnetwork::Ipv4Network;
+use pcap2socks::{Forwarder, ProxyConfig, Redirector};
 use pcap_ifs::{self, Interface};
 use shadowsocks::{self, ClientConfig, Config, ConfigType, Mode, ServerConfig};
 use std::collections::VecDeque;
 use std::io;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 use stunxy::{self, NatType, RW as _};
@@ -151,6 +152,47 @@ pub fn run_shadowsocks(
         let _ = rt.block_on(shadowsocks::run_local(config));
         is_ss.store(false, Ordering::Relaxed);
         is_running.store(false, Ordering::Relaxed);
+    });
+
+    Ok(())
+}
+
+pub fn run_pcap2socks(
+    interface: &str,
+    mtu: usize,
+    src: Ipv4Network,
+    publish: Option<Ipv4Addr>,
+    proxy: SocketAddrV4,
+    auth: Option<(String, String)>,
+    is_running: Arc<AtomicBool>,
+    upload: Arc<AtomicUsize>,
+    download: Arc<AtomicUsize>,
+) -> io::Result<()> {
+    let interface = match pcap2socks::interface(Some(interface.to_string())) {
+        Some(interface) => interface,
+        None => return Err(io::Error::from(io::ErrorKind::NotFound)),
+    };
+    let (tx, mut rx) = interface.open()?;
+    let forwarder = Forwarder::new_monitored(
+        tx,
+        mtu,
+        interface.hardware_addr(),
+        interface.ip_addr().unwrap(),
+        download,
+    );
+    let mut redirector = Redirector::new(
+        Arc::new(Mutex::new(forwarder)),
+        src,
+        publish.unwrap_or(interface.ip_addr().unwrap()),
+        publish,
+        ProxyConfig::new_socks(proxy, false, false, auth),
+    );
+
+    let mut rt = Runtime::new()?;
+    thread::spawn(move || {
+        let is_running_cloned = Arc::clone(&is_running);
+        let _ = rt.block_on(redirector.open_monitored(&mut rx, is_running, upload));
+        is_running_cloned.store(false, Ordering::Relaxed);
     });
 
     Ok(())

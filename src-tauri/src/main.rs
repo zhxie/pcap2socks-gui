@@ -100,9 +100,13 @@ fn main() {
 
                                 // Device
                                 let src = payload.source.parse::<Ipv4Network>()?;
-                                let gw = match payload.publish.is_empty() {
-                                    true => interface.ip_addr().unwrap(),
-                                    false => payload.publish.parse()?,
+                                let publish = match payload.publish.is_empty() {
+                                    true => None,
+                                    false => Some(payload.publish.parse()?),
+                                };
+                                let gw = match publish {
+                                    Some(publish) => publish,
+                                    None => interface.ip_addr().unwrap(),
                                 };
                                 let mask = lib::calc_mask(src, gw);
 
@@ -119,6 +123,17 @@ fn main() {
                                 status.latency.store(0, Ordering::Relaxed);
                                 status.upload.store(0, Ordering::Relaxed);
                                 status.download.store(0, Ordering::Relaxed);
+                                lib::run_pcap2socks(
+                                    &payload.interface,
+                                    mtu,
+                                    src,
+                                    publish,
+                                    proxy,
+                                    auth.clone(),
+                                    Arc::clone(&status.is_running),
+                                    Arc::clone(&status.upload),
+                                    Arc::clone(&status.download),
+                                )?;
                                 lib::ping(
                                     proxy,
                                     auth.clone(),

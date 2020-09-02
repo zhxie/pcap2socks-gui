@@ -1497,7 +1497,7 @@ dependencies = [
 [[package]]
 name = "pcap2socks"
 version = "0.6.0-alpha"
-source = "git+https://github.com/zhxie/pcap2socks#48205bacc8d5a0bbef95bbdcd6ab2e77615dbbb6"
+source = "git+https://github.com/zhxie/pcap2socks#37ef32eb982b12b8824f3035448bce8105d5d113"
 dependencies = [
  "async-socks5",
  "clap",
