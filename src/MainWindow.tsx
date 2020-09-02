@@ -356,8 +356,11 @@ class MainWindow extends React.Component<{}, State> {
           <Col className="content-content-col" span={24}>
             <Paragraph>
               <Title level={3}>网卡</Title>
-              <Paragraph type="secondary">
+              <Paragraph type="secondary" style={{ marginBottom: "0" }}>
                 pcap2socks 将监听指定的网卡中的所有网络流量，其中代理源设备的网络流量将被转发到代理服务器。
+              </Paragraph>
+              <Paragraph type="secondary">
+                一般情况下，你可以选择此设备上网的网卡。但如果你正在使用移动热点功能，而你的代理源设备正是通过该热点上网的，那么请选择这张用于共享的网卡。
               </Paragraph>
             </Paragraph>
           </Col>
@@ -402,7 +405,8 @@ class MainWindow extends React.Component<{}, State> {
             <Paragraph>
               <Title level={3}>代理源设备</Title>
               <Paragraph type="secondary">
-                代理源设备是你希望被代理的设备，这些设备的网络流量将被转发到代理服务器。
+                代理源设备是你希望被代理的设备，可以是一台 Switch，也可以是一台
+                PlayStation，和此设备处在同一网络中的设备都可以是代理源设备。如果你从未使用过加速器，你可以任选一个预设方案继续。
               </Paragraph>
             </Paragraph>
           </Col>
@@ -460,9 +464,9 @@ class MainWindow extends React.Component<{}, State> {
             <Paragraph>
               <Title level={3}>SOCKS 代理服务器</Title>
               <Paragraph type="secondary" style={{ marginBottom: "0" }}>
-                代理源设备被转发到代理服务器的网络流量，可以用于维系代理源设备与目的设备间的网络连接。
+                代理源设备被转发到代理服务器的网络流量将用于维系代理源设备与目的设备间的网络联系。
               </Paragraph>
-              <Paragraph type="secondary">如果你有一份来自他人的代理配置文件，在此你可以导入该代理配置。</Paragraph>
+              <Paragraph type="secondary">如果你有一份来自他人的代理配置文件，你可以导入该代理配置。</Paragraph>
             </Paragraph>
           </Col>
         </Row>
@@ -505,6 +509,7 @@ class MainWindow extends React.Component<{}, State> {
             })()}
             <RowInput
               label="高级选项"
+              valueTooltip="如果你不清楚高级选项，请留空"
               value={this.state.extra}
               onChange={(value) => {
                 this.setState({ extra: value });
