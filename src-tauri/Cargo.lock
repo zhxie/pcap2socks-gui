@@ -1484,17 +1484,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pcap-ifs"
-version = "0.1.0"
-source = "git+https://github.com/zhxie/pcap-ifs#57a6a2a2478ba3e32a24562631f90f8607a0c950"
-dependencies = [
- "interfaces",
- "ipnetwork",
- "netifs",
- "pnet_datalink",
-]
-
-[[package]]
 name = "pcap2socks"
 version = "0.6.0-alpha"
 source = "git+https://github.com/zhxie/pcap2socks#37ef32eb982b12b8824f3035448bce8105d5d113"
@@ -1521,9 +1510,7 @@ version = "0.1.0"
 dependencies = [
  "dns-lookup",
  "dnsping",
- "futures",
  "ipnetwork",
- "pcap-ifs",
  "pcap2socks",
  "serde",
  "serde_json",

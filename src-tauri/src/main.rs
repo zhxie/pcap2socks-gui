@@ -5,7 +5,7 @@
 
 use ipnetwork::Ipv4Network;
 use std::io;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
 pub mod cmd;
@@ -14,7 +14,6 @@ use cmd::{Cmd, GetStatusResponse, Interface, RunResponse, TestNatTypeResponse};
 use lib::Status;
 
 fn main() {
-    let is_ss = Arc::new(AtomicBool::new(false));
     let status = Arc::new(Status::new());
 
     tauri::AppBuilder::new()
@@ -67,7 +66,6 @@ fn main() {
                     } => tauri::execute_promise(
                         _webview,
                         {
-                            let is_ss = Arc::clone(&is_ss);
                             let status = Arc::clone(&status);
                             move || {
                                 let auth = match payload.authentication {
@@ -115,7 +113,6 @@ fn main() {
                                     lib::run_shadowsocks(
                                         payload.extra.as_str(),
                                         proxy,
-                                        is_ss,
                                         Arc::clone(&status.is_running),
                                     )?;
                                 }
@@ -124,7 +121,7 @@ fn main() {
                                 status.upload.store(0, Ordering::Relaxed);
                                 status.download.store(0, Ordering::Relaxed);
                                 lib::run_pcap2socks(
-                                    &payload.interface,
+                                    interface,
                                     mtu,
                                     src,
                                     publish,
@@ -156,17 +153,8 @@ fn main() {
                     Cmd::Stop { callback, error } => tauri::execute_promise(
                         _webview,
                         {
-                            let is_ss = Arc::clone(&is_ss);
                             let status = Arc::clone(&status);
                             move || {
-                                if is_ss.load(Ordering::Relaxed) {
-                                    return Err(io::Error::new(
-                                        io::ErrorKind::Other,
-                                        "cannot stop Shadowsocks",
-                                    )
-                                    .into());
-                                }
-
                                 status.is_running.store(false, Ordering::Relaxed);
                                 status.latency.store(0, Ordering::Relaxed);
                                 status.upload.store(0, Ordering::Relaxed);

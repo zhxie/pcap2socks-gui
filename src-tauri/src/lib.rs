@@ -1,7 +1,7 @@
 use dnsping::{self, RW as _};
 use ipnetwork::Ipv4Network;
+use pcap2socks::pcap::Interface;
 use pcap2socks::{Forwarder, ProxyConfig, Redirector};
-use pcap_ifs::{self, Interface};
 use shadowsocks::{self, ClientConfig, Config, ConfigType, Mode, ServerConfig};
 use std::collections::VecDeque;
 use std::io;
@@ -12,16 +12,14 @@ use std::thread;
 use std::time::Duration;
 use stunxy::{self, NatType, RW as _};
 use tokio::runtime::Runtime;
+use tokio::time;
 
 pub fn interfaces() -> Vec<Interface> {
-    pcap_ifs::interfaces()
-        .into_iter()
-        .filter(|inter| inter.is_up() && !inter.is_loopback())
-        .collect::<Vec<_>>()
+    pcap2socks::interfaces()
 }
 
 pub fn interface(name: &str) -> Option<Interface> {
-    pcap_ifs::interfaces()
+    interfaces()
         .into_iter()
         .filter(|inter| inter.is_up() && !inter.is_loopback())
         .filter(|inter| inter.name() == name)
@@ -133,7 +131,6 @@ impl Status {
 pub fn run_shadowsocks(
     proxy: &str,
     local: SocketAddrV4,
-    is_ss: Arc<AtomicBool>,
     is_running: Arc<AtomicBool>,
 ) -> io::Result<()> {
     let server = match ServerConfig::from_url(proxy) {
@@ -147,18 +144,37 @@ pub fn run_shadowsocks(
 
     let mut rt = Runtime::new()?;
 
-    is_ss.store(true, Ordering::Relaxed);
     thread::spawn(move || {
-        let _ = rt.block_on(shadowsocks::run_local(config));
-        is_ss.store(false, Ordering::Relaxed);
+        let _ = rt.block_on(run_shadowsocks_impl(config, Arc::clone(&is_running)));
         is_running.store(false, Ordering::Relaxed);
     });
 
     Ok(())
 }
 
+pub async fn run_shadowsocks_impl(config: Config, is_running: Arc<AtomicBool>) {
+    let ss = shadowsocks::run(config);
+    let close = delay_for_check(is_running);
+
+    tokio::pin!(ss, close);
+
+    tokio::select! {
+        _ = ss => {},
+        _ = close => {}
+    };
+}
+
+pub async fn delay_for_check(b: Arc<AtomicBool>) -> Result<(), ()> {
+    loop {
+        time::delay_for(time::Duration::new(1, 0)).await;
+        if !b.load(Ordering::Relaxed) {
+            return Err(());
+        }
+    }
+}
+
 pub fn run_pcap2socks(
-    interface: &str,
+    interface: Interface,
     mtu: usize,
     src: Ipv4Network,
     publish: Option<Ipv4Addr>,
@@ -168,10 +184,6 @@ pub fn run_pcap2socks(
     upload: Arc<AtomicUsize>,
     download: Arc<AtomicUsize>,
 ) -> io::Result<()> {
-    let interface = match pcap2socks::interface(Some(interface.to_string())) {
-        Some(interface) => interface,
-        None => return Err(io::Error::from(io::ErrorKind::NotFound)),
-    };
     let (tx, mut rx) = interface.open()?;
     let forwarder = Forwarder::new_monitored(
         tx,
