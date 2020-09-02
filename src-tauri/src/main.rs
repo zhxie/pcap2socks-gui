@@ -183,12 +183,15 @@ fn main() {
                         {
                             let status = Arc::clone(&status);
                             move || {
-                                Ok(GetStatusResponse {
+                                let response = GetStatusResponse {
                                     run: status.is_running.load(Ordering::Relaxed),
                                     latency: status.latency.load(Ordering::Relaxed),
                                     upload: status.upload.load(Ordering::Relaxed),
                                     download: status.download.load(Ordering::Relaxed),
-                                })
+                                };
+                                status.upload.store(0, Ordering::Relaxed);
+                                status.download.store(0, Ordering::Relaxed);
+                                Ok(response)
                             }
                         },
                         callback,
