@@ -7,6 +7,8 @@ use ipnetwork::Ipv4Network;
 use std::io;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
 
 pub mod cmd;
 pub mod lib;
@@ -68,14 +70,12 @@ fn main() {
                         {
                             let status = Arc::clone(&status);
                             move || {
+                                // Proxy
+                                let proxy = lib::resolve_addr(payload.destination.as_str())?;
                                 let auth = match payload.authentication {
                                     true => Some((payload.username, payload.password)),
                                     false => None,
                                 };
-                                let proxy = lib::resolve_addr(payload.destination.as_str())?;
-
-                                // NAT type test
-                                let nat = lib::test_nat_type(proxy, auth.clone())?;
 
                                 // Interface
                                 let interface = match lib::interface(&payload.interface) {
@@ -109,18 +109,26 @@ fn main() {
                                 let mask = lib::calc_mask(src, gw);
 
                                 // Proxy
+                                status.is_running.store(true, Ordering::Relaxed);
+                                status.latency.store(0, Ordering::Relaxed);
+                                status.upload.store(0, Ordering::Relaxed);
+                                status.download.store(0, Ordering::Relaxed);
                                 if !payload.extra.is_empty() {
                                     lib::run_shadowsocks(
                                         payload.extra.as_str(),
                                         proxy,
                                         Arc::clone(&status.is_running),
                                     )?;
+                                    thread::sleep(Duration::new(5, 0));
                                 }
-                                status.is_running.store(true, Ordering::Relaxed);
-                                status.latency.store(0, Ordering::Relaxed);
-                                status.upload.store(0, Ordering::Relaxed);
-                                status.download.store(0, Ordering::Relaxed);
-                                lib::run_pcap2socks(
+                                let nat = match lib::test_nat_type(proxy, auth.clone()) {
+                                    Ok(nat) => nat,
+                                    Err(e) => {
+                                        status.is_running.store(false, Ordering::Relaxed);
+                                        return Err(e.into());
+                                    }
+                                };
+                                if let Err(e) = lib::run_pcap2socks(
                                     interface,
                                     mtu,
                                     src,
@@ -130,13 +138,19 @@ fn main() {
                                     Arc::clone(&status.is_running),
                                     Arc::clone(&status.upload),
                                     Arc::clone(&status.download),
-                                )?;
-                                lib::ping(
+                                ) {
+                                    status.is_running.store(false, Ordering::Relaxed);
+                                    return Err(e.into());
+                                };
+                                if let Err(e) = lib::ping(
                                     proxy,
                                     auth.clone(),
                                     Arc::clone(&status.is_running),
                                     Arc::clone(&status.latency),
-                                )?;
+                                ) {
+                                    status.is_running.store(false, Ordering::Relaxed);
+                                    return Err(e.into());
+                                };
 
                                 Ok(RunResponse {
                                     nat: nat.to_string(),
