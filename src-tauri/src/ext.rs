@@ -233,7 +233,13 @@ pub fn ping(
             break;
         }
         id = id.checked_add(1).unwrap_or(0);
-        match dnsping::ping(&rw, "8.8.8.8:53".parse().unwrap(), id, false, &host) {
+        match dnsping::ping(
+            &rw,
+            SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(8, 8, 8, 8), 53)),
+            id,
+            false,
+            &host,
+        ) {
             Ok((_, duration)) => {
                 latency.store(duration.as_millis() as usize, Ordering::Relaxed);
             }

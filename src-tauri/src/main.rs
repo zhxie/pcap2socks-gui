@@ -5,6 +5,7 @@
 
 use ipnetwork::Ipv4Network;
 use std::io;
+use std::net::Ipv4Addr;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;
@@ -97,10 +98,33 @@ fn main() {
                                 }
 
                                 // Device
-                                let src = payload.source.parse::<Ipv4Network>()?;
-                                let publish = match payload.publish.is_empty() {
-                                    true => None,
-                                    false => Some(payload.publish.parse()?),
+                                let src = match payload.preset {
+                                    0 => payload.source.parse::<Ipv4Network>()?,
+                                    1 => Ipv4Network::new(Ipv4Addr::new(10, 6, 0, 1), 32).unwrap(),
+                                    2 => {
+                                        let mut ip_octets = interface.ip_addr().unwrap().octets();
+                                        ip_octets[0] = 172;
+                                        ip_octets[1] = 24;
+                                        ip_octets[2] = ip_octets[2].checked_add(1).unwrap_or(0);
+
+                                        Ipv4Network::new(Ipv4Addr::from(ip_octets), 32).unwrap()
+                                    }
+                                    _ => unreachable!(),
+                                };
+                                let publish = match payload.preset {
+                                    0 => match payload.publish.is_empty() {
+                                        true => None,
+                                        false => Some(payload.publish.parse()?),
+                                    },
+                                    1 => Some(Ipv4Addr::new(10, 6, 0, 2)),
+                                    2 => {
+                                        let mut ip_octets = interface.ip_addr().unwrap().octets();
+                                        ip_octets[0] = 172;
+                                        ip_octets[1] = 24;
+
+                                        Some(Ipv4Addr::from(ip_octets))
+                                    }
+                                    _ => unreachable!(),
                                 };
                                 let gw = match publish {
                                     Some(publish) => publish,
