@@ -38,11 +38,12 @@ const STAGE_PROXY: number = 3;
 const STAGE_RUNNING: number = 4;
 
 const ipc = async (args: any): Promise<any> => {
-  const result: string = await promisified(args);
-  if (typeof result === "string") {
-    throw new Error(result);
-  } else {
+  try {
+    const result: string = await promisified(args);
+
     return result;
+  } catch (e) {
+    throw new Error(e);
   }
 };
 

@@ -35,7 +35,6 @@ class Interface {
 
       return Interface.from(data);
     } catch (e) {
-      console.error(e);
       return null;
     }
   };

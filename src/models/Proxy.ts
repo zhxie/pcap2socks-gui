@@ -43,7 +43,6 @@ class Proxy {
 
       return Proxy.from(data);
     } catch (e) {
-      console.error(e);
       return null;
     }
   };

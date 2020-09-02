@@ -39,7 +39,6 @@ class Device {
 
       return Device.from(data);
     } catch (e) {
-      console.error(e);
       return null;
     }
   };
