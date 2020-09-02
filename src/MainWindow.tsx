@@ -29,7 +29,7 @@ import Proxy from "./models/Proxy";
 import Convert from "./utils/Convert";
 
 const { Content } = Layout;
-const { Paragraph, Title } = Typography;
+const { Paragraph, Title, Text } = Typography;
 
 const STAGE_WELCOME: number = 0;
 const STAGE_INTERFACE: number = 1;
@@ -95,7 +95,7 @@ class MainWindow extends React.Component<{}, State> {
       source: "10.6.0.1",
       publish: "10.6.0.2",
       // Proxy
-      destination: "",
+      destination: "localhost:1080",
       authentication: false,
       username: "",
       password: "",
@@ -208,7 +208,10 @@ class MainWindow extends React.Component<{}, State> {
     this.setState({ loading: true });
 
     try {
-      await ipc({ cmd: "run", payload: payload });
+      let res: { nat: string; ip: string; mask: string; gateway: string; mtu: number } = await ipc({
+        cmd: "run",
+        payload: payload,
+      });
 
       this.setState({
         stage: STAGE_RUNNING,
@@ -220,6 +223,52 @@ class MainWindow extends React.Component<{}, State> {
         download: NaN,
       });
       this.timer = setInterval(this.getStatus, 1000);
+
+      notification.success({
+        message: "运行成功",
+        description: (
+          <div>
+            <Paragraph>
+              代理服务器的 NAT 类型为：
+              <Text strong>{res.nat}</Text>
+            </Paragraph>
+            <Paragraph style={{ marginBottom: "0" }}>请将代理源设备的网络设置配置为：</Paragraph>
+            <Row gutter={[16, 0]}>
+              <Col span={6}>
+                <span>IP 地址</span>
+              </Col>
+              <Col span={18}>
+                <span>{res.ip}</span>
+              </Col>
+            </Row>
+            <Row gutter={[16, 0]}>
+              <Col span={6}>
+                <span>子网掩码</span>
+              </Col>
+              <Col span={18}>
+                <span>{res.mask}</span>
+              </Col>
+            </Row>
+            <Row gutter={[16, 0]}>
+              <Col span={6}>
+                <span>网关</span>
+              </Col>
+              <Col span={18}>
+                <span>{res.gateway}</span>
+              </Col>
+            </Row>
+            <Row gutter={[16, 0]}>
+              <Col span={6}>
+                <span>MTU</span>
+              </Col>
+              <Col span={18}>
+                <span>{res.mtu}</span>
+              </Col>
+            </Row>
+          </div>
+        ),
+        duration: 0,
+      });
     } catch (e) {
       this.setState({ loading: false, ready: false, time: NaN, latency: NaN, upload: NaN, download: NaN });
       notification.error({

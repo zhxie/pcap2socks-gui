@@ -131,7 +131,7 @@ fn main() {
                                     ip: src.to_string(),
                                     mask: mask.to_string(),
                                     gateway: gw.to_string(),
-                                    mtu: 0,
+                                    mtu,
                                 })
                             }
                         },
