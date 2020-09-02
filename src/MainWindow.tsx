@@ -229,11 +229,17 @@ class MainWindow extends React.Component<{}, State> {
         message: "运行成功",
         description: (
           <div>
-            <Paragraph>
-              代理服务器的 NAT 类型为：
-              <Text strong>{res.nat}</Text>
+            <Paragraph style={{ marginBottom: "0" }}>
+              代理服务器的 NAT 类型为 <Text strong>{res.nat}</Text>
             </Paragraph>
-            <Paragraph style={{ marginBottom: "0" }}>请将代理源设备的网络设置配置为：</Paragraph>
+          </div>
+        ),
+      });
+      notification.info({
+        message: "网络设置",
+        description: (
+          <div>
+            <Paragraph>请将代理源设备的网络设置配置为：</Paragraph>
             <Row gutter={[16, 0]}>
               <Col span={6}>
                 <span>IP 地址</span>
@@ -357,10 +363,10 @@ class MainWindow extends React.Component<{}, State> {
             <Paragraph>
               <Title level={3}>网卡</Title>
               <Paragraph type="secondary" style={{ marginBottom: "0" }}>
-                pcap2socks 将监听指定的网卡中的所有网络流量，其中代理源设备的网络流量将被转发到代理服务器。
+                pcap2socks 将监听指定的网卡中的所有网络流量，其中源设备的网络流量将被转发到代理服务器。
               </Paragraph>
               <Paragraph type="secondary">
-                一般情况下，你可以选择此设备上网的网卡。但如果你正在使用移动热点功能，而你的代理源设备正是通过该热点上网的，那么请选择这张用于共享的网卡。
+                一般情况下，你可以选择此设备上网的网卡。但如果你正在使用移动热点功能，而你的源设备正是通过该热点上网的，那么请选择这张用于共享的网卡。
               </Paragraph>
             </Paragraph>
           </Col>
@@ -403,10 +409,10 @@ class MainWindow extends React.Component<{}, State> {
         <Row className="content-content-row" gutter={[16, 32]} justify="center">
           <Col className="content-content-col" span={24}>
             <Paragraph>
-              <Title level={3}>代理源设备</Title>
+              <Title level={3}>源设备</Title>
               <Paragraph type="secondary">
-                代理源设备是你希望被代理的设备，可以是一台 Switch，也可以是一台
-                PlayStation，和此设备处在同一网络中的设备都可以是代理源设备。如果你从未使用过加速器，你可以任选一个预设方案继续。
+                源设备是你希望被代理的设备，可以是一台 Switch，也可以是一台
+                PlayStation，和此设备处在同一网络中的设备都可以是源设备。如果你从未使用过加速器，你可以任选一个预设方案继续。
               </Paragraph>
             </Paragraph>
           </Col>
@@ -462,9 +468,9 @@ class MainWindow extends React.Component<{}, State> {
         <Row className="content-content-row" gutter={[16, 32]} justify="center">
           <Col className="content-content-col" span={24}>
             <Paragraph>
-              <Title level={3}>SOCKS 代理服务器</Title>
+              <Title level={3}>代理服务器</Title>
               <Paragraph type="secondary" style={{ marginBottom: "0" }}>
-                代理源设备被转发到代理服务器的网络流量将用于维系代理源设备与目的设备间的网络联系。
+                代理源设备被转发到代理服务器的网络流量将用于维系源设备与目的设备间的网络联系。
               </Paragraph>
               <Paragraph type="secondary">如果你有一份来自他人的代理配置文件，你可以导入该代理配置。</Paragraph>
             </Paragraph>
@@ -568,6 +574,13 @@ class MainWindow extends React.Component<{}, State> {
                 prefix={<HourglassOutlined />}
                 title="延迟"
                 value={Convert.convertDuration(this.state.latency)}
+                valueStyle={(() => {
+                  if (this.state.latency === Infinity) {
+                    return { color: "#cf1322" };
+                  } else if (this.state.latency >= 100) {
+                    return { color: "#faad14" };
+                  }
+                })()}
                 suffix={Convert.convertDurationUnit(this.state.latency)}
               />
             </Card>
