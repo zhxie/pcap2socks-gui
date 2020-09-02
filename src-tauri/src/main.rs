@@ -119,7 +119,7 @@ fn main() {
                                         proxy,
                                         Arc::clone(&status.is_running),
                                     )?;
-                                    thread::sleep(Duration::new(5, 0));
+                                    thread::sleep(Duration::new(1, 0));
                                 }
                                 let nat = match lib::test_nat_type(proxy, auth.clone()) {
                                     Ok(nat) => nat,
@@ -152,9 +152,13 @@ fn main() {
                                     return Err(e.into());
                                 };
 
+                                let ip_str = match src.size() {
+                                    1 => src.network().to_string(),
+                                    _ => format!("{} - {}", src.network(), src.broadcast()),
+                                };
                                 Ok(RunResponse {
                                     nat: nat.to_string(),
-                                    ip: src.to_string(),
+                                    ip: ip_str,
                                     mask: mask.to_string(),
                                     gateway: gw.to_string(),
                                     mtu,
