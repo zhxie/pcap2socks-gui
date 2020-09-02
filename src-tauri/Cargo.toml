@@ -1,0 +1,37 @@
+[package]
+name = "pcap2socks-gui"
+version = "0.1.0"
+authors = [ "Xie Zhihao <xzh1206@gmail.com>" ]
+edition = "2018"
+description = "A front-end interface for pcap2socks."
+repository = "https://github.com/zhxie/pcap2socks-gui"
+license = "MIT"
+keywords = [ "proxy", "pcap", "socks" ]
+categories = [ "network-programming" ]
+default-run = "pcap2socks-gui"
+build = "src/build.rs"
+
+[dependencies]
+dns-lookup = "1.0.3"
+dnsping = "0.2.0"
+futures = "0.3.5"
+ipnetwork = "0.16.0"
+pcap-ifs = { git = "https://github.com/zhxie/pcap-ifs" }
+pcap2socks = { git = "https://github.com/zhxie/pcap2socks" }
+serde_json = "1.0"
+serde = { version = "1.0", features = [ "derive" ] }
+shadowsocks-rust = { version = "1.8.15", default-features = false, features = ["ring-aead-ciphers", "sodium", "rc4", "aes-cfb", "aes-ctr"] }
+stunxy = "0.2.1"
+tauri = { version = "0.9" }
+tokio = { version = "0.2.22", default-features = false }
+
+[target."cfg(windows)".build-dependencies]
+winres = "0.1"
+
+[features]
+embedded-server = [ "tauri/embedded-server" ]
+no-server = [ "tauri/no-server" ]
+
+[[bin]]
+name = "pcap2socks-gui"
+path = "src/main.rs"

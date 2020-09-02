@@ -1,7 +1,21 @@
 import React from "react";
 import { notification, Layout, Row, Col, Typography, Card, Statistic, Button } from "antd";
-import { LeftOutlined, FolderOpenOutlined, ExportOutlined, PlayCircleOutlined, RightOutlined, PoweroffOutlined } from "@ant-design/icons";
-import { ThunderboltTwoTone, ApiTwoTone, PlaySquareTwoTone, CompassTwoTone, CheckCircleTwoTone } from "@ant-design/icons";
+import {
+  LeftOutlined,
+  FolderOpenOutlined,
+  ExportOutlined,
+  PlayCircleOutlined,
+  RightOutlined,
+  PoweroffOutlined,
+} from "@ant-design/icons";
+import {
+  ThunderboltTwoTone,
+  ApiTwoTone,
+  PlaySquareTwoTone,
+  CompassTwoTone,
+  QuestionCircleTwoTone,
+  CheckCircleTwoTone,
+} from "@ant-design/icons";
 import { ClockCircleOutlined, HourglassOutlined, ArrowDownOutlined, ArrowUpOutlined } from "@ant-design/icons";
 import { promisified } from "tauri/api/tauri";
 
@@ -24,7 +38,14 @@ const STAGE_PROXY: number = 3;
 const STAGE_RUNNING: number = 4;
 
 const ipc = async (args: any): Promise<any> => {
-  return JSON.parse(await promisified(args));
+  const result: string = await promisified(args);
+  try {
+    const data = JSON.parse(result);
+
+    return data;
+  } catch (_) {
+    throw new Error(result);
+  }
 };
 
 type State = {
@@ -54,6 +75,7 @@ type State = {
 };
 
 class MainWindow extends React.Component<{}, State> {
+  public timer: any;
   constructor(props: any) {
     super(props);
     this.state = {
@@ -182,26 +204,25 @@ class MainWindow extends React.Component<{}, State> {
       extra: proxy.extra,
     };
 
-    try {
-      let result: { result: boolean; message: string } = await ipc({ cmd: "run", payload: payload });
+    this.setState({ loading: true });
 
-      if (result.result) {
-        this.setState({
-          stage: STAGE_RUNNING,
-          loading: false,
-          ready: true,
-        });
-      } else {
-        this.setState({ loading: false, ready: false });
-        notification.error({
-          message: "运行失败",
-          description: result.message,
-        });
-      }
+    try {
+      await ipc({ cmd: "run", payload: payload });
+
+      this.setState({
+        stage: STAGE_RUNNING,
+        loading: false,
+        ready: true,
+        time: NaN,
+        latency: NaN,
+        upload: NaN,
+        download: NaN,
+      });
+      this.timer = setInterval(this.getStatus, 1000);
     } catch (e) {
-      this.setState({ loading: false });
+      this.setState({ loading: false, ready: false, time: NaN, latency: NaN, upload: NaN, download: NaN });
       notification.error({
-        message: "未知错误",
+        message: "运行失败",
         description: e.message,
       });
     }
@@ -211,28 +232,39 @@ class MainWindow extends React.Component<{}, State> {
     this.setState({ loading: true });
 
     try {
-      let result: { result: boolean; message: string } = await ipc({ cmd: "stop" });
+      await ipc({ cmd: "stop" });
 
-      if (result.result) {
-        this.setState({
-          stage: STAGE_WELCOME,
-          loading: false,
-          time: NaN,
-          latency: NaN,
-          upload: NaN,
-          download: NaN,
-        });
-      } else {
-        this.setState({ loading: false });
-        notification.error({
-          message: "停止运行失败",
-          description: result.message,
-        });
-      }
+      this.setState({
+        stage: STAGE_WELCOME,
+        loading: false,
+        time: NaN,
+        latency: NaN,
+        upload: NaN,
+        download: NaN,
+      });
+      clearInterval(this.timer);
     } catch (e) {
       this.setState({ loading: false });
       notification.error({
-        message: "未知错误",
+        message: "停止运行失败",
+        description: e.message,
+      });
+    }
+  };
+
+  getStatus = async () => {
+    try {
+      let status: { run: boolean; latency: number; upload: number; download: number } = await ipc({ cmd: "getStatus" });
+
+      this.setState({
+        time: status.run ? (Number.isNaN(this.state.time) ? 1 : this.state.time + 1) : NaN,
+        latency: status.latency > 1000 ? Infinity : status.latency,
+        upload: status.upload,
+        download: status.download,
+      });
+    } catch (e) {
+      notification.error({
+        message: "获取运行状态失败",
         description: e.message,
       });
     }
@@ -273,7 +305,9 @@ class MainWindow extends React.Component<{}, State> {
           <Col className="content-content-col" span={24}>
             <Paragraph>
               <Title level={3}>网卡</Title>
-              <Paragraph type="secondary">pcap2socks 将监听指定的网卡中的所有网络流量，其中代理源设备的网络流量将被转发到代理服务器。</Paragraph>
+              <Paragraph type="secondary">
+                pcap2socks 将监听指定的网卡中的所有网络流量，其中代理源设备的网络流量将被转发到代理服务器。
+              </Paragraph>
             </Paragraph>
           </Col>
         </Row>
@@ -316,7 +350,9 @@ class MainWindow extends React.Component<{}, State> {
           <Col className="content-content-col" span={24}>
             <Paragraph>
               <Title level={3}>代理源设备</Title>
-              <Paragraph type="secondary">代理源设备是你希望被代理的设备，这些设备的网络流量将被转发到代理服务器。</Paragraph>
+              <Paragraph type="secondary">
+                代理源设备是你希望被代理的设备，这些设备的网络流量将被转发到代理服务器。
+              </Paragraph>
             </Paragraph>
           </Col>
         </Row>
@@ -388,7 +424,11 @@ class MainWindow extends React.Component<{}, State> {
                 this.setState({ destination: value });
               }}
             />
-            <RowSwitch label="代理认证" value={this.state.authentication} onChange={(value) => this.setState({ authentication: value })} />
+            <RowSwitch
+              label="代理认证"
+              value={this.state.authentication}
+              onChange={(value) => this.setState({ authentication: value })}
+            />
             {(() => {
               if (this.state.authentication) {
                 return (
@@ -431,20 +471,39 @@ class MainWindow extends React.Component<{}, State> {
       <div className="content-content">
         <Row className="content-content-row" gutter={[16, 16]} justify="center">
           <Col className="content-content-col" span={24}>
-            <CheckCircleTwoTone className="content-content-icon" twoToneColor="#52c41a" />
+            {(() => {
+              if (Number.isNaN(this.state.time)) {
+                return <QuestionCircleTwoTone className="content-content-icon" />;
+              } else {
+                return <CheckCircleTwoTone className="content-content-icon" twoToneColor="#52c41a" />;
+              }
+            })()}
           </Col>
         </Row>
         <Row className="content-content-row" gutter={[16, 32]} justify="center">
           <Col className="content-content-col" span={24}>
             <Paragraph>
-              <Title level={3}>运行中</Title>
+              <Title level={3}>
+                {(() => {
+                  if (Number.isNaN(this.state.time)) {
+                    return "未运行";
+                  } else {
+                    return "运行中";
+                  }
+                })()}
+              </Title>
             </Paragraph>
           </Col>
         </Row>
         <Row gutter={[16, 0]} justify="center">
           <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
             <Card className="card" hoverable>
-              <Statistic precision={2} prefix={<ClockCircleOutlined />} title="运行时间" value={Convert.convertTime(this.state.time)} />
+              <Statistic
+                precision={2}
+                prefix={<ClockCircleOutlined />}
+                title="运行时间"
+                value={Convert.convertTime(this.state.time)}
+              />
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
@@ -511,7 +570,11 @@ class MainWindow extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage > STAGE_WELCOME && this.state.stage <= STAGE_PROXY) {
                 return (
-                  <Button className="button" icon={<LeftOutlined />} onClick={() => this.setState({ stage: this.state.stage - 1 })}>
+                  <Button
+                    className="button"
+                    icon={<LeftOutlined />}
+                    onClick={() => this.setState({ stage: this.state.stage - 1 })}
+                  >
                     上一步
                   </Button>
                 );
@@ -553,7 +616,12 @@ class MainWindow extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage >= STAGE_WELCOME && this.state.stage < STAGE_PROXY) {
                 return (
-                  <Button className="button" icon={<RightOutlined />} type="primary" onClick={() => this.setState({ stage: this.state.stage + 1 })}>
+                  <Button
+                    className="button"
+                    icon={<RightOutlined />}
+                    type="primary"
+                    onClick={() => this.setState({ stage: this.state.stage + 1 })}
+                  >
                     下一步
                   </Button>
                 );
@@ -650,7 +718,7 @@ class MainWindow extends React.Component<{}, State> {
       }
     } catch (e) {
       notification.error({
-        message: "未知错误",
+        message: "获取网卡失败",
         description: e.message,
       });
     }
