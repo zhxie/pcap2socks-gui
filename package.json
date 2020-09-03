@@ -11,6 +11,7 @@
     "url": "https://github.com/zhxie/pcap2socks-gui.git"
   },
   "private": true,
+  "homepage": "./",
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",

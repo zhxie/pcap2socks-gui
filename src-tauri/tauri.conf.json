@@ -10,7 +10,7 @@
   },
   "tauri": {
     "embeddedServer": {
-      "active": true
+      "active": false
     },
     "bundle": {
       "active": false,
