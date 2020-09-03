@@ -20,8 +20,9 @@ import { ClockCircleOutlined, HourglassOutlined, ArrowDownOutlined, ArrowUpOutli
 import { promisified } from "tauri/api/tauri";
 
 import "./MainWindow.css";
-import RowSelect from "./components/RowSelect";
+import RowButtonSelect from "./components/RowButtonSelect";
 import RowInput from "./components/RowInput";
+import RowSelect from "./components/RowSelect";
 import RowSwitch from "./components/RowSwitch";
 import Interface from "./models/Interface";
 import { presets, Device } from "./models/Device";
@@ -157,6 +158,26 @@ class MainWindow extends React.Component<{}, State> {
     a.rel = "noopener";
     a.href = URL.createObjectURL(new Blob([proxy.stringify()], { type: "application/json" }));
     a.dispatchEvent(new MouseEvent("click"));
+  };
+
+  updateInterfaces = async () => {
+    try {
+      let interfaces: { name: string; alias: string }[] = await ipc({ cmd: "listInterfaces" });
+      if (interfaces.length <= 0) {
+        this.setState({ ready: false, interfaces: [], interface: "" });
+        notification.error({
+          message: "无网卡",
+          description: "pcap2socks 无法在此设备中找到任何有效的网卡。",
+        });
+      } else {
+        this.setState({ interfaces: interfaces, interface: interfaces[0].name });
+      }
+    } catch (e) {
+      notification.error({
+        message: "获取网卡失败",
+        description: e.message,
+      });
+    }
   };
 
   run = async () => {
@@ -373,7 +394,7 @@ class MainWindow extends React.Component<{}, State> {
         </Row>
         <Row className="content-content-row" gutter={[16, 0]} justify="center">
           <Col className="content-content-col" xs={24} sm={18} md={12}>
-            <RowSelect
+            <RowButtonSelect
               label="网卡"
               options={this.state.interfaces.map((ele) => {
                 return { label: ele.alias ? ele.alias : ele.name, value: ele.name };
@@ -382,6 +403,8 @@ class MainWindow extends React.Component<{}, State> {
               onChange={(value) => {
                 this.setState({ interface: value });
               }}
+              text="刷新"
+              onClick={this.updateInterfaces}
             />
             <RowInput
               label="MTU"
@@ -771,43 +794,29 @@ class MainWindow extends React.Component<{}, State> {
       }
     }
 
-    // Load interfaces
-    try {
-      let interfaces: { name: string; alias: string }[] = await ipc({ cmd: "listInterfaces" });
-      if (interfaces.length <= 0) {
-        notification.error({
-          message: "无网卡",
-          description: "pcap2socks 无法在此设备中找到任何有效的网卡。",
-        });
-      } else {
-        this.setState({ interfaces: interfaces, interface: interfaces[0].name });
-
-        // Load interface from local storage
-        const interText = localStorage.getItem("interface");
-        if (interText) {
-          const inter = Interface.parse(interText);
-          if (inter) {
-            let exist = interfaces.findIndex((ele) => ele.name === inter.interface) > -1;
-            if (exist) {
-              this.setState({
-                interface: inter.interface,
-                mtu: inter.mtu,
-                ready: ready === 2,
-              });
-            } else {
-              notification.warn({
-                message: "网卡已更新",
-                description: "您的网卡自上次运行以来已发生变化，请重新配置 pcap2socks。",
-              });
-            }
+    await this.updateInterfaces();
+    const interfaces = this.state.interfaces;
+    if (interfaces.length > 0) {
+      // Load interface from local storage
+      const interText = localStorage.getItem("interface");
+      if (interText) {
+        const inter = Interface.parse(interText);
+        if (inter) {
+          let exist = interfaces.findIndex((ele) => ele.name === inter.interface) > -1;
+          if (exist) {
+            this.setState({
+              interface: inter.interface,
+              mtu: inter.mtu,
+              ready: ready === 2,
+            });
+          } else {
+            notification.warn({
+              message: "网卡已更新",
+              description: "您的网卡自上次运行以来已发生变化，请重新配置 pcap2socks。",
+            });
           }
         }
       }
-    } catch (e) {
-      notification.error({
-        message: "获取网卡失败",
-        description: e.message,
-      });
     }
   }
 }
