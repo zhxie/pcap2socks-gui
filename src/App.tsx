@@ -1,6 +1,7 @@
 import React from "react";
 import { ConfigProvider } from "antd";
 import { notification, Layout, Row, Col, Typography, Card, Statistic, Button } from "antd";
+import zhCN from "antd/es/locale/zh_CN";
 import {
   LeftOutlined,
   ReloadOutlined,
@@ -388,7 +389,7 @@ class App extends React.Component<{}, State> {
                 pcap2socks 将监听指定的网卡中的所有网络流量，其中源设备的网络流量将被转发到代理服务器。
               </Paragraph>
               <Paragraph type="secondary">
-                一般情况下，你可以选择此设备上网的网卡。但如果你正在使用移动热点功能，而你的源设备正是通过该热点上网的，那么请选择这张用于共享的网卡。
+                通常，你可以选择此设备用于上网的网卡，但如果你的源设备通过此设备的移动热点上网，请选择这张用于网络共享的网卡。
               </Paragraph>
             </Paragraph>
           </Col>
@@ -432,10 +433,10 @@ class App extends React.Component<{}, State> {
           <Col className="content-content-col" span={24}>
             <Paragraph>
               <Title level={3}>源设备</Title>
-              <Paragraph type="secondary">
-                源设备是你希望被代理的设备，可以是一台 Switch，也可以是一台
-                PlayStation，和此设备处在同一网络中的设备都可以是源设备。如果你从未使用过加速器，你可以任选一个预设方案继续。
+              <Paragraph type="secondary" style={{ marginBottom: "0" }}>
+                源设备是你希望被代理的设备，和此设备处于同一网络中的任何设备都可以是源设备。
               </Paragraph>
+              <Paragraph type="secondary">如果你不清楚如何配置，你可以任选一个预设方案尝试并继续。</Paragraph>
             </Paragraph>
           </Col>
         </Row>
@@ -492,7 +493,7 @@ class App extends React.Component<{}, State> {
             <Paragraph>
               <Title level={3}>代理服务器</Title>
               <Paragraph type="secondary" style={{ marginBottom: "0" }}>
-                代理源设备被转发到代理服务器的网络流量将用于维系源设备与目的设备间的网络联系。
+                源设备被转发到代理服务器的网络流量将用于维系源设备与目的设备间的网络联系。
               </Paragraph>
               <Paragraph type="secondary">如果你有一份来自他人的代理配置文件，你可以导入该代理配置。</Paragraph>
             </Paragraph>
@@ -830,7 +831,7 @@ class App extends React.Component<{}, State> {
 }
 
 export default () => (
-  <ConfigProvider autoInsertSpaceInButton={false}>
+  <ConfigProvider autoInsertSpaceInButton={false} locale={zhCN}>
     <App />
   </ConfigProvider>
 );
