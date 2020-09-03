@@ -153,13 +153,19 @@ class App extends React.Component<{}, State> {
       });
       return;
     }
+    const data = proxy.stringify();
 
     // Export to file
     const a = document.createElement("a");
     a.download = "pcap2socks.json";
     a.rel = "noopener";
-    a.href = URL.createObjectURL(new Blob([proxy.stringify()], { type: "application/json" }));
+    a.href = URL.createObjectURL(new Blob([data], { type: "application/json" }));
     a.dispatchEvent(new MouseEvent("click"));
+
+    notification.info({
+      message: "导出代理配置",
+      description: data,
+    });
   };
 
   updateInterfaces = async () => {
