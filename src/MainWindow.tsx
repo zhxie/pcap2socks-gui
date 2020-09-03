@@ -2,6 +2,7 @@ import React from "react";
 import { notification, Layout, Row, Col, Typography, Card, Statistic, Button } from "antd";
 import {
   LeftOutlined,
+  ReloadOutlined,
   FolderOpenOutlined,
   ExportOutlined,
   PlayCircleOutlined,
@@ -20,7 +21,6 @@ import { ClockCircleOutlined, HourglassOutlined, ArrowDownOutlined, ArrowUpOutli
 import { promisified } from "tauri/api/tauri";
 
 import "./MainWindow.css";
-import RowButtonSelect from "./components/RowButtonSelect";
 import RowInput from "./components/RowInput";
 import RowSelect from "./components/RowSelect";
 import RowSwitch from "./components/RowSwitch";
@@ -394,7 +394,7 @@ class MainWindow extends React.Component<{}, State> {
         </Row>
         <Row className="content-content-row" gutter={[16, 0]} justify="center">
           <Col className="content-content-col" xs={24} sm={18} md={12}>
-            <RowButtonSelect
+            <RowSelect
               label="网卡"
               options={this.state.interfaces.map((ele) => {
                 return { label: ele.alias ? ele.alias : ele.name, value: ele.name };
@@ -403,8 +403,6 @@ class MainWindow extends React.Component<{}, State> {
               onChange={(value) => {
                 this.setState({ interface: value });
               }}
-              text="刷新"
-              onClick={this.updateInterfaces}
             />
             <RowInput
               label="MTU"
@@ -667,6 +665,15 @@ class MainWindow extends React.Component<{}, State> {
                     onClick={() => this.setState({ stage: this.state.stage - 1 })}
                   >
                     上一步
+                  </Button>
+                );
+              }
+            })()}
+            {(() => {
+              if (this.state.stage === STAGE_INTERFACE) {
+                return (
+                  <Button className="button" icon={<ReloadOutlined />} onClick={this.updateInterfaces}>
+                    刷新网卡列表
                   </Button>
                 );
               }
