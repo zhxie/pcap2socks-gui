@@ -1249,6 +1249,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ninat"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aba80059ca19c0204ce221781864ac1b3497e055c2d913833577348b3ba822b3"
+dependencies = [
+ "clap",
+ "dns-lookup",
+ "socks",
+ "structopt",
+]
+
+[[package]]
 name = "nix"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1414,11 +1426,11 @@ dependencies = [
  "dns-lookup",
  "dnsping",
  "ipnetwork",
+ "ninat",
  "pcap2socks",
  "serde",
  "serde_json",
  "shadowsocks-rust",
- "stunxy",
  "tauri",
  "tokio",
  "winres",
@@ -2208,21 +2220,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "stunxy"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3a29c1047332337d8f2853cc0626a6bb35151241176efe932d322e3b14423c4"
-dependencies = [
- "byteorder",
- "bytes",
- "clap",
- "dns-lookup",
- "rand",
- "socks",
- "structopt",
 ]
 
 [[package]]

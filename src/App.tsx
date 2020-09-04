@@ -254,12 +254,30 @@ class App extends React.Component<{}, State> {
       });
       this.timer = setInterval(this.getStatus, 1000);
 
+      let nat = res.nat;
+      switch (res.nat) {
+        case "A":
+          nat = "开放 (A, 1)";
+          break;
+        case "B":
+          nat = "中等 (B, 2)";
+          break;
+        case "C":
+          nat = "严格 (C ,3)";
+          break;
+        case "D":
+          nat = "严格 (D, 3)";
+          break;
+        case "F":
+          nat = "不可用 (F)";
+          break;
+      }
       notification.success({
         message: "运行成功",
         description: (
           <div>
             <Paragraph style={{ marginBottom: "0" }}>
-              代理服务器的 NAT 类型为 <Text strong>{res.nat}</Text>
+              代理服务器的 NAT 类型为 <Text strong>{nat}</Text>
             </Paragraph>
           </div>
         ),

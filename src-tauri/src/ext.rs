@@ -1,5 +1,6 @@
 use dnsping::{self, RW as _};
 use ipnetwork::Ipv4Network;
+use ninat::{self, NatType, RW as _};
 use pcap2socks::pcap::Interface;
 use pcap2socks::{Forwarder, ProxyConfig, Redirector};
 use shadowsocks::{self, ClientConfig, Config, ConfigType, Mode, ServerConfig};
@@ -10,7 +11,6 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
-use stunxy::{self, NatType, RW as _};
 use tokio::runtime::Runtime;
 use tokio::time;
 
@@ -94,20 +94,28 @@ pub fn calc_mask(src: Ipv4Network, gw: Ipv4Addr) -> Ipv4Addr {
 const NAT_TYPE_TEST_TIMEOUT: u64 = 3000;
 
 pub fn test_nat_type(proxy: SocketAddrV4, auth: Option<(String, String)>) -> io::Result<NatType> {
-    let datagram = stunxy::Datagram::bind(
-        SocketAddr::V4(proxy),
-        SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0)),
-        auth,
+    let datagram = ninat::Datagram::bind(
+        proxy,
+        SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0),
+        auth.clone(),
     )?;
     datagram.set_read_timeout(Some(Duration::from_millis(NAT_TYPE_TEST_TIMEOUT)))?;
-    let rw: Box<dyn stunxy::RW> = Box::new(datagram);
+    let rw1: Box<dyn ninat::RW> = Box::new(datagram);
 
-    let server_ip = resolve_ip("stun.ekiga.net")?;
-    let server_addr = SocketAddr::V4(SocketAddrV4::new(server_ip, 3478));
+    let datagram = ninat::Datagram::bind(
+        proxy,
+        SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0),
+        auth.clone(),
+    )?;
+    datagram.set_read_timeout(Some(Duration::from_millis(NAT_TYPE_TEST_TIMEOUT)))?;
+    let rw2: Box<dyn ninat::RW> = Box::new(datagram);
 
-    let result = stunxy::nat_test(&rw, server_addr)?;
+    let server1 = ninat::lookup_host_v4("nncs1-lp1.n.n.srv.nintendo.net")?;
+    let server2 = ninat::lookup_host_v4("nncs2-lp1.n.n.srv.nintendo.net")?;
 
-    Ok(result.nat_type())
+    let (_, nat) = ninat::nat_test(&rw1, &rw2, server1, server2)?;
+
+    Ok(nat)
 }
 
 pub struct Status {
