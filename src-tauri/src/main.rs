@@ -13,7 +13,7 @@ use std::time::Duration;
 
 pub mod cmd;
 pub mod ext;
-use cmd::{Cmd, GetStatusResponse, Interface, RunResponse, TestNatTypeResponse};
+use cmd::{Cmd, GetStatusResponse, Interface, RunResponse, TestResponse};
 use ext::Status;
 
 fn main() {
@@ -39,25 +39,44 @@ fn main() {
                         callback,
                         error,
                     ),
-                    Cmd::TestNatType {
+                    Cmd::Test {
                         payload,
                         callback,
                         error,
                     } => tauri::execute_promise(
                         _webview,
-                        move || {
-                            let auth = match payload.authentication {
-                                true => Some((payload.username, payload.password)),
-                                false => None,
-                            };
-                            let proxy = ext::resolve_addr(payload.proxy.as_str())?;
+                        {
+                            let status = Arc::clone(&status);
+                            move || {
+                                let proxy = ext::resolve_addr(payload.destination.as_str())?;
+                                let auth = match payload.authentication {
+                                    true => Some((payload.username, payload.password)),
+                                    false => None,
+                                };
 
-                            // NAT type test
-                            let nat = ext::test_nat_type(proxy, auth)?;
+                                // Proxy
+                                status.is_running.store(true, Ordering::Relaxed);
+                                if !payload.extra.is_empty() {
+                                    ext::run_shadowsocks(
+                                        payload.extra.as_str(),
+                                        proxy,
+                                        Arc::clone(&status.is_running),
+                                    )?;
+                                    thread::sleep(Duration::new(1, 0));
+                                }
+                                let nat = match ext::test_nat_type(proxy, auth.clone()) {
+                                    Ok(nat) => nat,
+                                    Err(e) => {
+                                        status.is_running.store(false, Ordering::Relaxed);
+                                        return Err(e.into());
+                                    }
+                                };
+                                status.is_running.store(false, Ordering::Relaxed);
 
-                            Ok(TestNatTypeResponse {
-                                nat: nat.to_string(),
-                            })
+                                Ok(TestResponse {
+                                    nat: nat.to_string(),
+                                })
+                            }
                         },
                         callback,
                         error,

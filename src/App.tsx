@@ -7,6 +7,7 @@ import {
   ReloadOutlined,
   FolderOpenOutlined,
   ExportOutlined,
+  ExperimentOutlined,
   PlayCircleOutlined,
   RightOutlined,
   PoweroffOutlined,
@@ -55,10 +56,18 @@ const ipc = async (args: any): Promise<any> => {
   }
 };
 
+const natTypes = new Map([
+  ["A", "开放 (A, 1)"],
+  ["B", "中等 (B, 2)"],
+  ["C", "严格 (C ,3)"],
+  ["D", "严格 (D, 3)"],
+  ["F", "不可用 (F)"],
+]);
+
 type State = {
   // Status
   stage: number;
-  loading: boolean;
+  loading: number;
   ready: boolean;
   time: number;
   latency: number;
@@ -88,7 +97,7 @@ class App extends React.Component<{}, State> {
     this.state = {
       // Status
       stage: STAGE_WELCOME,
-      loading: false,
+      loading: 0,
       ready: false,
       time: NaN,
       latency: NaN,
@@ -174,20 +183,68 @@ class App extends React.Component<{}, State> {
   };
 
   updateInterfaces = async () => {
+    this.setState({ loading: 1 });
+
     try {
       let interfaces: { name: string; alias: string }[] = await ipc({ cmd: "listInterfaces" });
       if (interfaces.length <= 0) {
-        this.setState({ ready: false, interfaces: [], interface: "" });
+        this.setState({ loading: 0, ready: false, interfaces: [], interface: "" });
         notification.error({
           message: "无网卡",
           description: "pcap2socks 无法在此设备中找到任何有效的网卡。",
         });
       } else {
-        this.setState({ interfaces: interfaces, interface: interfaces[0].name });
+        this.setState({ loading: 0, interfaces: interfaces, interface: interfaces[0].name });
       }
     } catch (e) {
+      this.setState({ loading: 0, ready: false });
       notification.error({
         message: "获取网卡失败",
+        description: e.message,
+      });
+    }
+  };
+
+  test = async () => {
+    const proxy = Proxy.from(this.state);
+    if (!proxy) {
+      this.setState({ ready: false });
+      notification.error({
+        message: "无法测试代理服务器",
+        description: "此代理配置是无效的。",
+      });
+      return;
+    }
+
+    const payload = {
+      destination: proxy.destination,
+      authentication: proxy.authentication,
+      username: proxy.username,
+      password: proxy.password,
+      extra: proxy.extra,
+    };
+
+    this.setState({ loading: 2 });
+
+    try {
+      let res: { nat: string } = await ipc({ cmd: "test", payload: payload });
+      this.setState({ loading: 0 });
+
+      let nat = natTypes.get(res.nat) ?? res.nat;
+      notification.success({
+        message: "测试代理服务器成功",
+        description: (
+          <div>
+            <Paragraph style={{ marginBottom: "0" }}>
+              代理服务器的 NAT 类型为 <Text strong>{nat}</Text>
+            </Paragraph>
+          </div>
+        ),
+      });
+    } catch (e) {
+      this.setState({ loading: 0, ready: false });
+      notification.error({
+        message: "测试代理服务器失败",
         description: e.message,
       });
     }
@@ -240,7 +297,7 @@ class App extends React.Component<{}, State> {
       extra: proxy.extra,
     };
 
-    this.setState({ loading: true });
+    this.setState({ loading: 3 });
 
     try {
       let res: { nat: string; ip: string; mask: string; gateway: string; mtu: number } = await ipc({
@@ -250,7 +307,7 @@ class App extends React.Component<{}, State> {
 
       this.setState({
         stage: STAGE_RUNNING,
-        loading: false,
+        loading: 0,
         ready: true,
         time: NaN,
         latency: NaN,
@@ -259,24 +316,7 @@ class App extends React.Component<{}, State> {
       });
       this.timer = setInterval(this.getStatus, 1000);
 
-      let nat = res.nat;
-      switch (res.nat) {
-        case "A":
-          nat = "开放 (A, 1)";
-          break;
-        case "B":
-          nat = "中等 (B, 2)";
-          break;
-        case "C":
-          nat = "严格 (C ,3)";
-          break;
-        case "D":
-          nat = "严格 (D, 3)";
-          break;
-        case "F":
-          nat = "不可用 (F)";
-          break;
-      }
+      let nat = natTypes.get(res.nat) ?? res.nat;
       notification.success({
         message: "运行成功",
         description: (
@@ -329,7 +369,7 @@ class App extends React.Component<{}, State> {
         duration: 0,
       });
     } catch (e) {
-      this.setState({ loading: false, ready: false, time: NaN, latency: NaN, upload: NaN, download: NaN });
+      this.setState({ loading: 0, ready: false, time: NaN, latency: NaN, upload: NaN, download: NaN });
       notification.error({
         message: "运行失败",
         description: e.message,
@@ -338,14 +378,14 @@ class App extends React.Component<{}, State> {
   };
 
   stop = async () => {
-    this.setState({ loading: true });
+    this.setState({ loading: 4 });
 
     try {
       await ipc({ cmd: "stop" });
 
       this.setState({
         stage: STAGE_WELCOME,
-        loading: false,
+        loading: 0,
         time: NaN,
         latency: NaN,
         upload: NaN,
@@ -353,7 +393,7 @@ class App extends React.Component<{}, State> {
       });
       clearInterval(this.timer);
     } catch (e) {
-      this.setState({ loading: false });
+      this.setState({ loading: 0 });
       notification.error({
         message: "停止运行失败",
         description: e.message,
@@ -698,6 +738,7 @@ class App extends React.Component<{}, State> {
                 return (
                   <Button
                     className="button"
+                    disabled={this.state.loading > 0}
                     icon={<LeftOutlined />}
                     onClick={() => this.setState({ stage: this.state.stage - 1 })}
                   >
@@ -709,7 +750,12 @@ class App extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_INTERFACE) {
                 return (
-                  <Button className="button" icon={<ReloadOutlined />} onClick={this.updateInterfaces}>
+                  <Button
+                    className="button"
+                    disabled={this.state.loading > 0 && this.state.loading !== 1}
+                    icon={<ReloadOutlined />}
+                    onClick={this.updateInterfaces}
+                  >
                     刷新网卡列表
                   </Button>
                 );
@@ -721,6 +767,7 @@ class App extends React.Component<{}, State> {
                   <div>
                     <Button
                       className="button"
+                      disabled={this.state.loading > 0}
                       icon={<FolderOpenOutlined />}
                       onClick={() => {
                         const node = document.getElementById("open");
@@ -735,6 +782,15 @@ class App extends React.Component<{}, State> {
                     <Button className="button" icon={<ExportOutlined />} onClick={this.export}>
                       导出代理配置
                     </Button>
+                    <Button
+                      className="button"
+                      disabled={this.state.loading > 0 && this.state.loading !== 2}
+                      loading={this.state.loading === 2}
+                      icon={<ExperimentOutlined />}
+                      onClick={this.test}
+                    >
+                      测试代理服务器
+                    </Button>
                   </div>
                 );
               }
@@ -745,7 +801,8 @@ class App extends React.Component<{}, State> {
                   <Button
                     className="button"
                     type="primary"
-                    loading={this.state.loading}
+                    disabled={this.state.loading > 0 && this.state.loading !== 3}
+                    loading={this.state.loading === 3}
                     icon={<PlayCircleOutlined />}
                     onClick={this.run}
                   >
@@ -759,6 +816,7 @@ class App extends React.Component<{}, State> {
                 return (
                   <Button
                     className="button"
+                    disabled={this.state.loading > 0}
                     icon={<RightOutlined />}
                     type="primary"
                     onClick={() => this.setState({ stage: this.state.stage + 1 })}
@@ -774,7 +832,8 @@ class App extends React.Component<{}, State> {
                   <Button
                     className="button"
                     type="primary"
-                    loading={this.state.loading}
+                    disabled={this.state.loading > 0 && this.state.loading !== 3}
+                    loading={this.state.loading === 3}
                     icon={<PoweroffOutlined />}
                     onClick={this.run}
                   >
@@ -790,7 +849,8 @@ class App extends React.Component<{}, State> {
                     className="button"
                     type="primary"
                     danger
-                    loading={this.state.loading}
+                    disabled={this.state.loading > 0 && this.state.loading !== 4}
+                    loading={this.state.loading === 4}
                     icon={<PoweroffOutlined />}
                     onClick={this.stop}
                   >

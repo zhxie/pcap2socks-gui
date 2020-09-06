@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
-pub struct TestNatTypePayload {
-    pub proxy: String,
+pub struct TestPayload {
+    pub destination: String,
     pub authentication: bool,
     pub username: String,
     pub password: String,
+    pub extra: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -29,8 +30,8 @@ pub enum Cmd {
         callback: String,
         error: String,
     },
-    TestNatType {
-        payload: TestNatTypePayload,
+    Test {
+        payload: TestPayload,
         callback: String,
         error: String,
     },
@@ -117,7 +118,7 @@ impl Interface {
 }
 
 #[derive(Debug, Serialize)]
-pub struct TestNatTypeResponse {
+pub struct TestResponse {
     pub nat: String,
 }
 
