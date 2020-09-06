@@ -23,8 +23,9 @@ import { ClockCircleOutlined, HourglassOutlined, ArrowDownOutlined, ArrowUpOutli
 import { promisified } from "tauri/api/tauri";
 
 import "./App.css";
-import RowInput from "./components/RowInput";
 import RowSelect from "./components/RowSelect";
+import RowCheckboxInput from "./components/RowCheckboxInput";
+import RowInput from "./components/RowInput";
 import RowSwitch from "./components/RowSwitch";
 import Interface from "./models/Interface";
 import { presets, Device } from "./models/Device";
@@ -40,7 +41,11 @@ const STAGE_DEVICE: number = 2;
 const STAGE_PROXY: number = 3;
 const STAGE_RUNNING: number = 4;
 
+const isTauri = !!window.__TAURI_INVOKE_HANDLER__;
 const ipc = async (args: any): Promise<any> => {
+  if (!isTauri) {
+    throw new Error("请通过可执行文件启动 pcap2socks。");
+  }
   try {
     const result: string = await promisified(args);
 
@@ -430,9 +435,15 @@ class App extends React.Component<{}, State> {
                 this.setState({ interface: value });
               }}
             />
-            <RowInput
+            <RowCheckboxInput
               label="MTU"
-              valueTooltip="MTU 的合法范围为 576 到 1500，如果你希望自动判断 MTU 值，请填写 0"
+              checkLabel="自动"
+              checked={this.state.mtu === 0}
+              onCheckedChange={(value) => {
+                this.setState({ mtu: value ? 0 : 1500 });
+              }}
+              valueVisible={this.state.mtu !== 0}
+              valueTooltip="MTU 的合法范围为 576 到 1500"
               value={this.state.mtu}
               onChange={(value) => {
                 this.setState({ mtu: Number(value) });
