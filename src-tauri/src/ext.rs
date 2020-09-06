@@ -160,23 +160,23 @@ pub fn run_shadowsocks(
     Ok(())
 }
 
-pub async fn run_shadowsocks_impl(config: Config, is_running: Arc<AtomicBool>) {
+pub async fn run_shadowsocks_impl(
+    config: Config,
+    is_running: Arc<AtomicBool>,
+) -> io::Result<((), ())> {
     let ss = shadowsocks::run(config);
     let close = delay_for_check(is_running);
 
     tokio::pin!(ss, close);
 
-    tokio::select! {
-        _ = ss => {},
-        _ = close => {}
-    };
+    tokio::try_join!(ss, close)
 }
 
-pub async fn delay_for_check(b: Arc<AtomicBool>) -> Result<(), ()> {
+pub async fn delay_for_check(b: Arc<AtomicBool>) -> io::Result<()> {
     loop {
         time::delay_for(time::Duration::new(1, 0)).await;
         if !b.load(Ordering::Relaxed) {
-            return Err(());
+            return Err(io::Error::from(io::ErrorKind::NotConnected));
         }
     }
 }
