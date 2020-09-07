@@ -67,6 +67,34 @@ class Convert {
       return "B/s";
     }
   };
+
+  static convertData = (size: number) => {
+    if (Number.isNaN(size) || !Number.isFinite(size)) {
+      return "-";
+    } else if (size > 1024 * 1024 * 1024) {
+      return size / (1024 * 1024 * 1024);
+    } else if (size > 1024 * 1024) {
+      return size / (1024 * 1024);
+    } else if (size > 1024) {
+      return size / 1024;
+    } else {
+      return size;
+    }
+  };
+
+  static convertDataUnit = (size: number) => {
+    if (Number.isNaN(size) || !Number.isFinite(size)) {
+      return "";
+    } else if (size > 1024 * 1024 * 1024) {
+      return "GB";
+    } else if (size > 1024 * 1024) {
+      return "MB";
+    } else if (size > 1024) {
+      return "kB";
+    } else {
+      return "B";
+    }
+  };
 }
 
 export default Convert;

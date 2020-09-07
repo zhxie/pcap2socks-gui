@@ -20,7 +20,7 @@ import {
   QuestionCircleTwoTone,
   CheckCircleTwoTone,
 } from "@ant-design/icons";
-import { ClockCircleOutlined, HourglassOutlined, ArrowDownOutlined, ArrowUpOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, HourglassOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 import { promisified } from "tauri/api/tauri";
 
 import "./App.css";
@@ -73,8 +73,11 @@ type State = {
   latency: number;
   upload: number;
   download: number;
+  uploadTotal: number;
+  downloadTotal: number;
   // Parameters
   interfaces: { name: string; alias: string }[];
+  total: boolean;
   // Interface
   interface: string;
   mtu: number;
@@ -103,8 +106,11 @@ class App extends React.Component<{}, State> {
       latency: NaN,
       upload: NaN,
       download: NaN,
+      uploadTotal: NaN,
+      downloadTotal: NaN,
       // Parameters
       interfaces: [],
+      total: false,
       // Interface
       interface: "",
       mtu: 0,
@@ -180,6 +186,10 @@ class App extends React.Component<{}, State> {
       message: "导出代理配置",
       description: data,
     });
+  };
+
+  switchTotal = () => {
+    this.setState({ total: !this.state.total });
   };
 
   updateInterfaces = async () => {
@@ -313,6 +323,8 @@ class App extends React.Component<{}, State> {
         latency: NaN,
         upload: NaN,
         download: NaN,
+        uploadTotal: NaN,
+        downloadTotal: NaN,
       });
       this.timer = setInterval(this.getStatus, 1000);
 
@@ -369,7 +381,16 @@ class App extends React.Component<{}, State> {
         duration: 0,
       });
     } catch (e) {
-      this.setState({ loading: 0, ready: false, time: NaN, latency: NaN, upload: NaN, download: NaN });
+      this.setState({
+        loading: 0,
+        ready: false,
+        time: NaN,
+        latency: NaN,
+        upload: NaN,
+        download: NaN,
+        uploadTotal: NaN,
+        downloadTotal: NaN,
+      });
       notification.error({
         message: "运行失败",
         description: e.message,
@@ -390,6 +411,8 @@ class App extends React.Component<{}, State> {
         latency: NaN,
         upload: NaN,
         download: NaN,
+        uploadTotal: NaN,
+        downloadTotal: NaN,
       });
       clearInterval(this.timer);
     } catch (e) {
@@ -410,6 +433,10 @@ class App extends React.Component<{}, State> {
         latency: status.latency > 1000 ? Infinity : status.latency,
         upload: status.upload,
         download: status.download,
+        uploadTotal: Number.isNaN(this.state.uploadTotal) ? status.upload : this.state.uploadTotal + status.upload,
+        downloadTotal: Number.isNaN(this.state.downloadTotal)
+          ? status.download
+          : this.state.downloadTotal + status.download,
       });
     } catch (e) {
       notification.error({
@@ -684,24 +711,40 @@ class App extends React.Component<{}, State> {
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
-            <Card className="card" hoverable>
+            <Card hoverable onClick={this.switchTotal}>
               <Statistic
                 precision={2}
-                prefix={<ArrowDownOutlined />}
-                title="下载速度"
-                value={Convert.convertBitrate(this.state.download)}
-                suffix={Convert.convertBitrateUnit(this.state.download)}
+                prefix={<ArrowUpOutlined />}
+                title={this.state.total ? "上传" : "上传速度"}
+                value={
+                  this.state.total
+                    ? Convert.convertData(this.state.uploadTotal)
+                    : Convert.convertBitrate(this.state.upload)
+                }
+                suffix={
+                  this.state.total
+                    ? Convert.convertDataUnit(this.state.uploadTotal)
+                    : Convert.convertBitrateUnit(this.state.upload)
+                }
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
-            <Card className="card" hoverable>
+            <Card hoverable onClick={this.switchTotal}>
               <Statistic
                 precision={2}
-                prefix={<ArrowUpOutlined />}
-                title="上传速度"
-                value={Convert.convertBitrate(this.state.upload)}
-                suffix={Convert.convertBitrateUnit(this.state.upload)}
+                prefix={<ArrowDownOutlined />}
+                title={this.state.total ? "下载" : "下载速度"}
+                value={
+                  this.state.total
+                    ? Convert.convertData(this.state.downloadTotal)
+                    : Convert.convertBitrate(this.state.download)
+                }
+                suffix={
+                  this.state.total
+                    ? Convert.convertDataUnit(this.state.downloadTotal)
+                    : Convert.convertBitrateUnit(this.state.download)
+                }
               />
             </Card>
           </Col>
