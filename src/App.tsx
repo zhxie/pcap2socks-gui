@@ -1,6 +1,6 @@
 import React from "react";
 import { ConfigProvider } from "antd";
-import { notification, Layout, Row, Col, Typography, Card, Statistic, Button } from "antd";
+import { notification, Layout, Row, Col, Typography, Card, Statistic, Button, Tooltip } from "antd";
 import zhCN from "antd/es/locale/zh_CN";
 import {
   LeftOutlined,
@@ -798,16 +798,18 @@ class App extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_WELCOME && this.state.ready) {
                 return (
-                  <Button
-                    className="button"
-                    type="primary"
-                    disabled={this.state.loading > 0 && this.state.loading !== 3}
-                    loading={this.state.loading === 3}
-                    icon={<PlayCircleOutlined />}
-                    onClick={this.run}
-                  >
-                    以上次的配置运行
-                  </Button>
+                  <Tooltip title={this.state.destination}>
+                    <Button
+                      className="button"
+                      type="primary"
+                      disabled={this.state.loading > 0 && this.state.loading !== 3}
+                      loading={this.state.loading === 3}
+                      icon={<PlayCircleOutlined />}
+                      onClick={this.run}
+                    >
+                      以上次的配置运行
+                    </Button>
+                  </Tooltip>
                 );
               }
             })()}
