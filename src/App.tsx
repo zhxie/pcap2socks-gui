@@ -907,34 +907,44 @@ class App extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_PROXY) {
                 return (
-                  <span>
-                    <Button
-                      className="button"
-                      disabled={this.state.loading > 0}
-                      icon={<FolderOpenOutlined />}
-                      onClick={() => {
-                        const node = document.getElementById("open");
-                        if (node) {
-                          node.click();
-                        }
-                      }}
-                    >
-                      导入代理配置
-                      <input id="open" type="file" onChange={this.import} style={{ display: "none" }} />
-                    </Button>
-                    <Button className="button" icon={<ExportOutlined />} onClick={this.export}>
-                      导出代理配置
-                    </Button>
-                    <Button
-                      className="button"
-                      disabled={this.state.loading > 0 && this.state.loading !== 2}
-                      loading={this.state.loading === 2}
-                      icon={<ExperimentOutlined />}
-                      onClick={this.test}
-                    >
-                      测试代理服务器
-                    </Button>
-                  </span>
+                  <Button
+                    className="button"
+                    disabled={this.state.loading > 0}
+                    icon={<FolderOpenOutlined />}
+                    onClick={() => {
+                      const node = document.getElementById("open");
+                      if (node) {
+                        node.click();
+                      }
+                    }}
+                  >
+                    导入代理配置
+                    <input id="open" type="file" onChange={this.import} style={{ display: "none" }} />
+                  </Button>
+                );
+              }
+            })()}
+            {(() => {
+              if (this.state.stage === STAGE_PROXY) {
+                return (
+                  <Button className="button" icon={<ExportOutlined />} onClick={this.export}>
+                    导出代理配置
+                  </Button>
+                );
+              }
+            })()}
+            {(() => {
+              if (this.state.stage === STAGE_PROXY) {
+                return (
+                  <Button
+                    className="button"
+                    disabled={this.state.loading > 0 && this.state.loading !== 2}
+                    loading={this.state.loading === 2}
+                    icon={<ExperimentOutlined />}
+                    onClick={this.test}
+                  >
+                    测试代理服务器
+                  </Button>
                 );
               }
             })()}
@@ -990,22 +1000,26 @@ class App extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_RUNNING) {
                 return (
-                  <span>
-                    <Button className="button" icon={<GlobalOutlined />} onClick={this.notifyNetwork}>
-                      显示网络设置
-                    </Button>
-                    <Button
-                      className="button"
-                      type="primary"
-                      danger
-                      disabled={this.state.loading > 0 && this.state.loading !== 4}
-                      loading={this.state.loading === 4}
-                      icon={<PoweroffOutlined />}
-                      onClick={this.stop}
-                    >
-                      停止
-                    </Button>
-                  </span>
+                  <Button className="button" icon={<GlobalOutlined />} onClick={this.notifyNetwork}>
+                    显示网络设置
+                  </Button>
+                );
+              }
+            })()}
+            {(() => {
+              if (this.state.stage === STAGE_RUNNING) {
+                return (
+                  <Button
+                    className="button"
+                    type="primary"
+                    danger
+                    disabled={this.state.loading > 0 && this.state.loading !== 4}
+                    loading={this.state.loading === 4}
+                    icon={<PoweroffOutlined />}
+                    onClick={this.stop}
+                  >
+                    停止
+                  </Button>
                 );
               }
             })()}
