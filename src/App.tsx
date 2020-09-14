@@ -42,6 +42,11 @@ const STAGE_DEVICE: number = 2;
 const STAGE_PROXY: number = 3;
 const STAGE_RUNNING: number = 4;
 
+const TRAFFIC_DISPLAY_TRAFFIC: number = 0;
+const TRAFFIC_DISPLAY_TRAFFIC_TOTAL: number = 1;
+const TRAFFIC_DISPLAY_PACKET: number = 2;
+const TRAFFIC_DISPLAY_PACKET_TOTAL: number = 3;
+
 const isTauri = !!window.__TAURI_INVOKE_HANDLER__;
 const ipc = async (args: any): Promise<any> => {
   if (!isTauri) {
@@ -72,12 +77,16 @@ type State = {
   time: number;
   latency: number;
   upload: number;
-  download: number;
   uploadTotal: number;
+  uploadCount: number;
+  uploadCountTotal: number;
+  download: number;
   downloadTotal: number;
+  downloadCount: number;
+  downloadCountTotal: number;
   // Parameters
   interfaces: { name: string; alias: string }[];
-  total: boolean;
+  trafficDisplay: number;
   // Interface
   interface: string;
   mtu: number;
@@ -105,12 +114,16 @@ class App extends React.Component<{}, State> {
       time: NaN,
       latency: NaN,
       upload: NaN,
-      download: NaN,
       uploadTotal: NaN,
+      uploadCount: NaN,
+      uploadCountTotal: NaN,
+      download: NaN,
       downloadTotal: NaN,
+      downloadCount: NaN,
+      downloadCountTotal: NaN,
       // Parameters
       interfaces: [],
-      total: false,
+      trafficDisplay: 0,
       // Interface
       interface: "",
       mtu: 0,
@@ -188,8 +201,68 @@ class App extends React.Component<{}, State> {
     });
   };
 
-  switchTotal = () => {
-    this.setState({ total: !this.state.total });
+  switchTraffic = () => {
+    this.setState({ trafficDisplay: (this.state.trafficDisplay + 1) % 4 });
+  };
+
+  showUploadValue = () => {
+    switch (this.state.trafficDisplay) {
+      case TRAFFIC_DISPLAY_TRAFFIC:
+        return Convert.convertRate(this.state.upload);
+      case TRAFFIC_DISPLAY_TRAFFIC_TOTAL:
+        return Convert.convertThroughput(this.state.uploadTotal);
+      case TRAFFIC_DISPLAY_PACKET:
+        return Convert.convertRate(this.state.uploadCount);
+      case TRAFFIC_DISPLAY_PACKET_TOTAL:
+        return Convert.convertThroughput(this.state.uploadCountTotal);
+      default:
+        throw new Error("out of range");
+    }
+  };
+
+  showUploadUnit = () => {
+    switch (this.state.trafficDisplay) {
+      case TRAFFIC_DISPLAY_TRAFFIC:
+        return Convert.convertBitrateUnit(this.state.upload);
+      case TRAFFIC_DISPLAY_TRAFFIC_TOTAL:
+        return Convert.convertBitThroughputUnit(this.state.uploadTotal);
+      case TRAFFIC_DISPLAY_PACKET:
+        return Convert.convertPacketRateUnit(this.state.uploadCount);
+      case TRAFFIC_DISPLAY_PACKET_TOTAL:
+        return Convert.convertPacketThroughputUnit(this.state.uploadCountTotal);
+      default:
+        throw new Error("out of range");
+    }
+  };
+
+  showDownloadValue = () => {
+    switch (this.state.trafficDisplay) {
+      case TRAFFIC_DISPLAY_TRAFFIC:
+        return Convert.convertRate(this.state.download);
+      case TRAFFIC_DISPLAY_TRAFFIC_TOTAL:
+        return Convert.convertThroughput(this.state.downloadTotal);
+      case TRAFFIC_DISPLAY_PACKET:
+        return Convert.convertRate(this.state.downloadCount);
+      case TRAFFIC_DISPLAY_PACKET_TOTAL:
+        return Convert.convertThroughput(this.state.downloadCountTotal);
+      default:
+        throw new Error("out of range");
+    }
+  };
+
+  showDownloadUnit = () => {
+    switch (this.state.trafficDisplay) {
+      case TRAFFIC_DISPLAY_TRAFFIC:
+        return Convert.convertBitrateUnit(this.state.download);
+      case TRAFFIC_DISPLAY_TRAFFIC_TOTAL:
+        return Convert.convertBitThroughputUnit(this.state.downloadTotal);
+      case TRAFFIC_DISPLAY_PACKET:
+        return Convert.convertPacketRateUnit(this.state.downloadCount);
+      case TRAFFIC_DISPLAY_PACKET_TOTAL:
+        return Convert.convertPacketThroughputUnit(this.state.downloadCountTotal);
+      default:
+        throw new Error("out of range");
+    }
   };
 
   updateInterfaces = async () => {
@@ -322,9 +395,13 @@ class App extends React.Component<{}, State> {
         time: NaN,
         latency: NaN,
         upload: NaN,
-        download: NaN,
         uploadTotal: NaN,
+        uploadCount: NaN,
+        uploadCountTotal: NaN,
+        download: NaN,
         downloadTotal: NaN,
+        downloadCount: NaN,
+        downloadCountTotal: NaN,
       });
       this.timer = setInterval(this.getStatus, 1000);
 
@@ -387,9 +464,13 @@ class App extends React.Component<{}, State> {
         time: NaN,
         latency: NaN,
         upload: NaN,
-        download: NaN,
         uploadTotal: NaN,
+        uploadCount: NaN,
+        uploadCountTotal: NaN,
+        download: NaN,
         downloadTotal: NaN,
+        downloadCount: NaN,
+        downloadCountTotal: NaN,
       });
       notification.error({
         message: "运行失败",
@@ -410,9 +491,13 @@ class App extends React.Component<{}, State> {
         time: NaN,
         latency: NaN,
         upload: NaN,
-        download: NaN,
         uploadTotal: NaN,
+        uploadCount: NaN,
+        uploadCountTotal: NaN,
+        download: NaN,
         downloadTotal: NaN,
+        downloadCount: NaN,
+        downloadCountTotal: NaN,
       });
       clearInterval(this.timer);
     } catch (e) {
@@ -426,17 +511,33 @@ class App extends React.Component<{}, State> {
 
   getStatus = async () => {
     try {
-      let status: { run: boolean; latency: number; upload: number; download: number } = await ipc({ cmd: "getStatus" });
+      let status: {
+        run: boolean;
+        innerLatency: number;
+        outerLatency: number;
+        upload: number;
+        uploadCount: number;
+        download: number;
+        downloadCount: number;
+      } = await ipc({ cmd: "getStatus" });
 
       this.setState({
         time: status.run ? (Number.isNaN(this.state.time) ? 1 : this.state.time + 1) : NaN,
-        latency: status.latency > 1000 ? Infinity : status.latency,
+        latency: status.outerLatency > 1000 ? Infinity : status.outerLatency,
         upload: status.upload,
-        download: status.download,
         uploadTotal: Number.isNaN(this.state.uploadTotal) ? status.upload : this.state.uploadTotal + status.upload,
+        uploadCount: status.uploadCount,
+        uploadCountTotal: Number.isNaN(this.state.uploadCountTotal)
+          ? status.uploadCount
+          : this.state.uploadCountTotal + status.uploadCount,
+        download: status.download,
         downloadTotal: Number.isNaN(this.state.downloadTotal)
           ? status.download
           : this.state.downloadTotal + status.download,
+        downloadCount: status.downloadCount,
+        downloadCountTotal: Number.isNaN(this.state.downloadCountTotal)
+          ? status.downloadCount
+          : this.state.downloadCountTotal + status.downloadCount,
       });
     } catch (e) {
       notification.error({
@@ -711,40 +812,24 @@ class App extends React.Component<{}, State> {
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
-            <Card hoverable onClick={this.switchTotal}>
+            <Card hoverable onClick={this.switchTraffic}>
               <Statistic
                 precision={2}
                 prefix={<ArrowUpOutlined />}
-                title={this.state.total ? "上传" : "上传速度"}
-                value={
-                  this.state.total
-                    ? Convert.convertData(this.state.uploadTotal)
-                    : Convert.convertBitrate(this.state.upload)
-                }
-                suffix={
-                  this.state.total
-                    ? Convert.convertDataUnit(this.state.uploadTotal)
-                    : Convert.convertBitrateUnit(this.state.upload)
-                }
+                title="上传"
+                value={this.showUploadValue()}
+                suffix={this.showUploadUnit()}
               />
             </Card>
           </Col>
           <Col xs={24} sm={12} md={6} style={{ marginBottom: "16px" }}>
-            <Card hoverable onClick={this.switchTotal}>
+            <Card hoverable onClick={this.switchTraffic}>
               <Statistic
                 precision={2}
                 prefix={<ArrowDownOutlined />}
-                title={this.state.total ? "下载" : "下载速度"}
-                value={
-                  this.state.total
-                    ? Convert.convertData(this.state.downloadTotal)
-                    : Convert.convertBitrate(this.state.download)
-                }
-                suffix={
-                  this.state.total
-                    ? Convert.convertDataUnit(this.state.downloadTotal)
-                    : Convert.convertBitrateUnit(this.state.download)
-                }
+                title="下载"
+                value={this.showDownloadValue()}
+                suffix={this.showDownloadUnit()}
               />
             </Card>
           </Col>

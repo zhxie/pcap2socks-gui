@@ -120,24 +120,24 @@ pub fn test_nat_type(proxy: SocketAddrV4, auth: Option<(String, String)>) -> io:
 
 pub struct Status {
     pub is_running: Arc<AtomicBool>,
-    pub latency: Arc<AtomicUsize>,
+    pub inner_latency: Arc<AtomicUsize>,
+    pub outer_latency: Arc<AtomicUsize>,
     pub upload: Arc<AtomicUsize>,
     pub upload_count: Arc<AtomicUsize>,
     pub download: Arc<AtomicUsize>,
     pub download_count: Arc<AtomicUsize>,
-    pub download_latency: Arc<AtomicUsize>,
 }
 
 impl Status {
     pub fn new() -> Status {
         Status {
             is_running: Arc::new(AtomicBool::new(false)),
-            latency: Arc::new(AtomicUsize::new(0)),
+            inner_latency: Arc::new(AtomicUsize::new(0)),
+            outer_latency: Arc::new(AtomicUsize::new(0)),
             upload: Arc::new(AtomicUsize::new(0)),
             upload_count: Arc::new(AtomicUsize::new(0)),
             download: Arc::new(AtomicUsize::new(0)),
             download_count: Arc::new(AtomicUsize::new(0)),
-            download_latency: Arc::new(AtomicUsize::new(0)),
         }
     }
 }

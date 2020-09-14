@@ -135,8 +135,10 @@ pub struct RunResponse {
 #[serde(rename_all = "camelCase")]
 pub struct GetStatusResponse {
     pub run: bool,
-    pub latency: usize,
+    pub inner_latency: usize,
+    pub outer_latency: usize,
     pub upload: usize,
+    pub upload_count: usize,
     pub download: usize,
-    pub download_latency: usize,
+    pub download_count: usize,
 }

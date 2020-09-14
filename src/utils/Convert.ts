@@ -40,7 +40,7 @@ class Convert {
     }
   };
 
-  static convertBitrate = (bitrate: number) => {
+  static convertRate = (bitrate: number) => {
     if (Number.isNaN(bitrate) || !Number.isFinite(bitrate)) {
       return "-";
     } else if (bitrate > 1024 * 1024 * 1024) {
@@ -68,7 +68,21 @@ class Convert {
     }
   };
 
-  static convertData = (size: number) => {
+  static convertPacketRateUnit = (rate: number) => {
+    if (Number.isNaN(rate) || !Number.isFinite(rate)) {
+      return "";
+    } else if (rate > 1024 * 1024 * 1024) {
+      return "Gp/s";
+    } else if (rate > 1024 * 1024) {
+      return "Mp/s";
+    } else if (rate > 1024) {
+      return "kp/s";
+    } else {
+      return "p/s";
+    }
+  };
+
+  static convertThroughput = (size: number) => {
     if (Number.isNaN(size) || !Number.isFinite(size)) {
       return "-";
     } else if (size > 1024 * 1024 * 1024) {
@@ -82,7 +96,7 @@ class Convert {
     }
   };
 
-  static convertDataUnit = (size: number) => {
+  static convertBitThroughputUnit = (size: number) => {
     if (Number.isNaN(size) || !Number.isFinite(size)) {
       return "";
     } else if (size > 1024 * 1024 * 1024) {
@@ -93,6 +107,20 @@ class Convert {
       return "kB";
     } else {
       return "B";
+    }
+  };
+
+  static convertPacketThroughputUnit = (size: number) => {
+    if (Number.isNaN(size) || !Number.isFinite(size)) {
+      return "";
+    } else if (size > 1024 * 1024 * 1024) {
+      return "Gp";
+    } else if (size > 1024 * 1024) {
+      return "Mp";
+    } else if (size > 1024) {
+      return "kp";
+    } else {
+      return "p";
     }
   };
 }
