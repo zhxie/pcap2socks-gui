@@ -30,7 +30,11 @@ fn main() {
                             let interfaces = ext::interfaces()
                                 .into_iter()
                                 .map(|inter| {
-                                    Interface::new(inter.name().clone(), inter.alias().clone())
+                                    Interface::new(
+                                        inter.name().clone(),
+                                        inter.alias().clone(),
+                                        inter.mtu(),
+                                    )
                                 })
                                 .collect::<Vec<_>>();
 
@@ -104,17 +108,6 @@ fn main() {
                                         return Err(io::Error::from(io::ErrorKind::NotFound).into())
                                     }
                                 };
-                                let mtu = match payload.mtu {
-                                    0 => interface.mtu(),
-                                    _ => payload.mtu,
-                                };
-                                if mtu <= 0 {
-                                    return Err(io::Error::new(
-                                        io::ErrorKind::InvalidData,
-                                        "cannot detect MTU of the interface",
-                                    )
-                                    .into());
-                                }
 
                                 // Device
                                 let src = match payload.preset {
@@ -174,7 +167,7 @@ fn main() {
                                 };
                                 if let Err(e) = ext::run_pcap2socks(
                                     interface,
-                                    mtu,
+                                    payload.mtu,
                                     src,
                                     publish,
                                     proxy,
@@ -208,7 +201,6 @@ fn main() {
                                     ip: ip_str,
                                     mask: mask.to_string(),
                                     gateway: gw.to_string(),
-                                    mtu,
                                 })
                             }
                         },
@@ -241,8 +233,7 @@ fn main() {
                             move || {
                                 let response = GetStatusResponse {
                                     run: status.is_running.load(Ordering::Relaxed),
-                                    inner_latency: status.inner_latency.load(Ordering::Relaxed),
-                                    outer_latency: status.outer_latency.load(Ordering::Relaxed),
+                                    latency: status.outer_latency.load(Ordering::Relaxed),
                                     upload: status.upload.load(Ordering::Relaxed),
                                     upload_count: status.upload_count.load(Ordering::Relaxed),
                                     download: status.download.load(Ordering::Relaxed),

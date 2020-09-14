@@ -54,66 +54,12 @@ pub enum Cmd {
 pub struct Interface {
     name: String,
     alias: Option<String>,
+    mtu: usize,
 }
 
 impl Interface {
-    pub fn new(name: String, alias: Option<String>) -> Interface {
-        Interface { name, alias }
-    }
-
-    pub fn parse(str: &str) -> Interface {
-        let chars = str.chars().collect::<Vec<_>>();
-
-        let mut iter = chars.into_iter();
-
-        let mut name = Vec::new();
-        loop {
-            match iter.next() {
-                Some(char) => match char {
-                    ' ' => break,
-                    _ => name.push(char),
-                },
-                None => break,
-            }
-        }
-        let name = name.into_iter().collect::<String>();
-
-        let mut alias = Vec::new();
-        let mut n: usize = 0;
-        loop {
-            match iter.next() {
-                Some(char) => match char {
-                    '(' => {
-                        if n != 0 {
-                            alias.push(char);
-                        }
-                        n = n.checked_add(1).unwrap_or(usize::MAX);
-                    }
-                    ')' => {
-                        n = n.checked_sub(1).unwrap_or(0);
-                        if n == 0 {
-                            break;
-                        } else {
-                            alias.push(char);
-                        }
-                    }
-                    _ => {
-                        if n <= 0 {
-                            break;
-                        } else {
-                            alias.push(char);
-                        }
-                    }
-                },
-                None => break,
-            }
-        }
-        let alias = match alias.len() {
-            0 => None,
-            _ => Some(alias.into_iter().collect::<String>()),
-        };
-
-        Interface::new(name, alias)
+    pub fn new(name: String, alias: Option<String>, mtu: usize) -> Interface {
+        Interface { name, alias, mtu }
     }
 }
 
@@ -128,15 +74,13 @@ pub struct RunResponse {
     pub ip: String,
     pub mask: String,
     pub gateway: String,
-    pub mtu: usize,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetStatusResponse {
     pub run: bool,
-    pub inner_latency: usize,
-    pub outer_latency: usize,
+    pub latency: usize,
     pub upload: usize,
     pub upload_count: usize,
     pub download: usize,

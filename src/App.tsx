@@ -1,3 +1,5 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
+
 import React from "react";
 import { ConfigProvider } from "antd";
 import { notification, Layout, Row, Col, Typography, Card, Statistic, Button, Tooltip } from "antd";
@@ -25,7 +27,6 @@ import { promisified } from "tauri/api/tauri";
 
 import "./App.css";
 import RowSelect from "./components/RowSelect";
-import RowCheckboxInput from "./components/RowCheckboxInput";
 import RowInput from "./components/RowInput";
 import RowSwitch from "./components/RowSwitch";
 import Interface from "./models/Interface";
@@ -74,6 +75,9 @@ type State = {
   stage: number;
   loading: number;
   ready: boolean;
+  ip: string;
+  mask: string;
+  gateway: string;
   time: number;
   latency: number;
   upload: number;
@@ -85,7 +89,7 @@ type State = {
   downloadCount: number;
   downloadCountTotal: number;
   // Parameters
-  interfaces: { name: string; alias: string }[];
+  interfaces: { name: string; alias: string; mtu: number }[];
   trafficDisplay: number;
   // Interface
   interface: string;
@@ -111,6 +115,9 @@ class App extends React.Component<{}, State> {
       stage: STAGE_WELCOME,
       loading: 0,
       ready: false,
+      ip: "",
+      mask: "",
+      gateway: "",
       time: NaN,
       latency: NaN,
       upload: NaN,
@@ -265,11 +272,70 @@ class App extends React.Component<{}, State> {
     }
   };
 
+  notifyNat = (title: string, nat: string) => {
+    const natStr = natTypes.get(nat) ?? nat;
+    notification.success({
+      message: title,
+      description: (
+        <div>
+          <Paragraph style={{ marginBottom: "0" }}>
+            代理服务器的 NAT 类型为 <Text strong>{natStr}</Text>
+          </Paragraph>
+        </div>
+      ),
+    });
+  };
+
+  notifyNetwork = () => {
+    notification.info({
+      key: "network",
+      message: "网络设置",
+      description: (
+        <div>
+          <Paragraph>请将代理源设备的网络设置配置为：</Paragraph>
+          <Row gutter={[16, 0]}>
+            <Col span={6}>
+              <span>IP 地址</span>
+            </Col>
+            <Col span={18}>
+              <span>{this.state.ip}</span>
+            </Col>
+          </Row>
+          <Row gutter={[16, 0]}>
+            <Col span={6}>
+              <span>子网掩码</span>
+            </Col>
+            <Col span={18}>
+              <span>{this.state.mask}</span>
+            </Col>
+          </Row>
+          <Row gutter={[16, 0]}>
+            <Col span={6}>
+              <span>网关</span>
+            </Col>
+            <Col span={18}>
+              <span>{this.state.gateway}</span>
+            </Col>
+          </Row>
+          <Row gutter={[16, 0]}>
+            <Col span={6}>
+              <span>MTU</span>
+            </Col>
+            <Col span={18}>
+              <span>不超过 {this.state.mtu}</span>
+            </Col>
+          </Row>
+        </div>
+      ),
+      duration: 0,
+    });
+  };
+
   updateInterfaces = async () => {
     this.setState({ loading: 1 });
 
     try {
-      let interfaces: { name: string; alias: string }[] = await ipc({ cmd: "listInterfaces" });
+      let interfaces: { name: string; alias: string; mtu: number }[] = await ipc({ cmd: "listInterfaces" });
       if (interfaces.length <= 0) {
         this.setState({ loading: 0, ready: false, interfaces: [], interface: "" });
         notification.error({
@@ -277,7 +343,7 @@ class App extends React.Component<{}, State> {
           description: "pcap2socks 无法在此设备中找到任何有效的网卡。",
         });
       } else {
-        this.setState({ loading: 0, interfaces: interfaces, interface: interfaces[0].name });
+        this.setState({ loading: 0, interfaces: interfaces, interface: interfaces[0].name, mtu: interfaces[0].mtu });
       }
     } catch (e) {
       this.setState({ loading: 0, ready: false });
@@ -313,17 +379,7 @@ class App extends React.Component<{}, State> {
       let res: { nat: string } = await ipc({ cmd: "test", payload: payload });
       this.setState({ loading: 0 });
 
-      let nat = natTypes.get(res.nat) ?? res.nat;
-      notification.success({
-        message: "测试代理服务器成功",
-        description: (
-          <div>
-            <Paragraph style={{ marginBottom: "0" }}>
-              代理服务器的 NAT 类型为 <Text strong>{nat}</Text>
-            </Paragraph>
-          </div>
-        ),
-      });
+      this.notifyNat("测试代理服务器成功", res.nat);
     } catch (e) {
       this.setState({ loading: 0, ready: false });
       notification.error({
@@ -383,7 +439,7 @@ class App extends React.Component<{}, State> {
     this.setState({ loading: 3 });
 
     try {
-      let res: { nat: string; ip: string; mask: string; gateway: string; mtu: number } = await ipc({
+      let res: { nat: string; ip: string; mask: string; gateway: string } = await ipc({
         cmd: "run",
         payload: payload,
       });
@@ -392,6 +448,9 @@ class App extends React.Component<{}, State> {
         stage: STAGE_RUNNING,
         loading: 0,
         ready: true,
+        ip: res.ip,
+        mask: res.mask,
+        gateway: res.gateway,
         time: NaN,
         latency: NaN,
         upload: NaN,
@@ -405,62 +464,15 @@ class App extends React.Component<{}, State> {
       });
       this.timer = setInterval(this.getStatus, 1000);
 
-      let nat = natTypes.get(res.nat) ?? res.nat;
-      notification.success({
-        message: "运行成功",
-        description: (
-          <div>
-            <Paragraph style={{ marginBottom: "0" }}>
-              代理服务器的 NAT 类型为 <Text strong>{nat}</Text>
-            </Paragraph>
-          </div>
-        ),
-      });
-      notification.info({
-        message: "网络设置",
-        description: (
-          <div>
-            <Paragraph>请将代理源设备的网络设置配置为：</Paragraph>
-            <Row gutter={[16, 0]}>
-              <Col span={6}>
-                <span>IP 地址</span>
-              </Col>
-              <Col span={18}>
-                <span>{res.ip}</span>
-              </Col>
-            </Row>
-            <Row gutter={[16, 0]}>
-              <Col span={6}>
-                <span>子网掩码</span>
-              </Col>
-              <Col span={18}>
-                <span>{res.mask}</span>
-              </Col>
-            </Row>
-            <Row gutter={[16, 0]}>
-              <Col span={6}>
-                <span>网关</span>
-              </Col>
-              <Col span={18}>
-                <span>{res.gateway}</span>
-              </Col>
-            </Row>
-            <Row gutter={[16, 0]}>
-              <Col span={6}>
-                <span>MTU</span>
-              </Col>
-              <Col span={18}>
-                <span>{res.mtu}</span>
-              </Col>
-            </Row>
-          </div>
-        ),
-        duration: 0,
-      });
+      this.notifyNat("运行成功", res.nat);
+      this.notifyNetwork();
     } catch (e) {
       this.setState({
         loading: 0,
         ready: false,
+        ip: "",
+        mask: "",
+        gateway: "",
         time: NaN,
         latency: NaN,
         upload: NaN,
@@ -488,6 +500,9 @@ class App extends React.Component<{}, State> {
       this.setState({
         stage: STAGE_WELCOME,
         loading: 0,
+        ip: "",
+        mask: "",
+        gateway: "",
         time: NaN,
         latency: NaN,
         upload: NaN,
@@ -500,6 +515,8 @@ class App extends React.Component<{}, State> {
         downloadCountTotal: NaN,
       });
       clearInterval(this.timer);
+
+      notification.close("network");
     } catch (e) {
       this.setState({ loading: 0 });
       notification.error({
@@ -513,8 +530,7 @@ class App extends React.Component<{}, State> {
     try {
       let status: {
         run: boolean;
-        innerLatency: number;
-        outerLatency: number;
+        latency: number;
         upload: number;
         uploadCount: number;
         download: number;
@@ -523,7 +539,7 @@ class App extends React.Component<{}, State> {
 
       this.setState({
         time: status.run ? (Number.isNaN(this.state.time) ? 1 : this.state.time + 1) : NaN,
-        latency: status.outerLatency > 1000 ? Infinity : status.outerLatency,
+        latency: status.latency > 1000 ? Infinity : status.latency,
         upload: status.upload,
         uploadTotal: Number.isNaN(this.state.uploadTotal) ? status.upload : this.state.uploadTotal + status.upload,
         uploadCount: status.uploadCount,
@@ -600,18 +616,18 @@ class App extends React.Component<{}, State> {
               })}
               value={this.state.interface}
               onChange={(value) => {
-                this.setState({ interface: value });
+                const inter = this.state.interfaces.find((ele) => ele.name === value);
+                let mtu = 0;
+                if (inter) {
+                  mtu = Math.min(1500, inter.mtu);
+                }
+
+                this.setState({ interface: value, mtu: mtu });
               }}
             />
-            <RowCheckboxInput
+            <RowInput
               label="MTU"
-              checkLabel="自动"
-              checked={this.state.mtu === 0}
-              onCheckedChange={(value) => {
-                this.setState({ mtu: value ? 0 : 1500 });
-              }}
-              valueVisible={this.state.mtu !== 0}
-              valueTooltip="MTU 的合法范围为 576 到 1500"
+              valueTooltip="MTU 的合法范围为 576 到 1500，如果你不清楚 MTU，请保留默认值"
               value={this.state.mtu}
               onChange={(value) => {
                 this.setState({ mtu: Number(value) });
@@ -780,6 +796,9 @@ class App extends React.Component<{}, State> {
                   }
                 })()}
               </Title>
+              <Paragraph type="secondary">
+                <a onClick={this.notifyNetwork}>网络设置</a>
+              </Paragraph>
             </Paragraph>
           </Col>
         </Row>
