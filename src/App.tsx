@@ -271,14 +271,23 @@ class App extends React.Component<{}, State> {
     }
   };
 
-  notifyNat = (title: string, nat: string) => {
+  notifyTest = (title: string, nat: string, ip: string) => {
     const natStr = natTypes.get(nat) ?? nat;
     notification.success({
       message: title,
       description: (
         <div>
+          {(() => {
+            if (ip) {
+              return (
+                <Paragraph style={{ marginBottom: "0" }}>
+                  代理服务器的 IP 为 <Text strong>{ip}</Text>，
+                </Paragraph>
+              );
+            }
+          })()}
           <Paragraph style={{ marginBottom: "0" }}>
-            代理服务器的 NAT 类型为 <Text strong>{natStr}</Text>
+            代理服务器的 NAT 类型为 <Text strong>{natStr}</Text>。
           </Paragraph>
         </div>
       ),
@@ -375,10 +384,10 @@ class App extends React.Component<{}, State> {
     this.setState({ loading: 2 });
 
     try {
-      let res: { nat: string } = await ipc({ cmd: "test", payload: payload });
+      let res: { nat: string; ip: string } = await ipc({ cmd: "test", payload: payload });
       this.setState({ loading: 0 });
 
-      this.notifyNat("测试代理服务器成功", res.nat);
+      this.notifyTest("测试代理服务器成功", res.nat, res.ip);
     } catch (e) {
       this.setState({ loading: 0, ready: false });
       notification.error({
@@ -438,7 +447,7 @@ class App extends React.Component<{}, State> {
     this.setState({ loading: 3 });
 
     try {
-      let res: { nat: string; ip: string; mask: string; gateway: string } = await ipc({
+      let res: { nat: string; remoteIp: string; srcIp: string; mask: string; gateway: string } = await ipc({
         cmd: "run",
         payload: payload,
       });
@@ -447,7 +456,7 @@ class App extends React.Component<{}, State> {
         stage: STAGE_RUNNING,
         loading: 0,
         ready: true,
-        ip: res.ip,
+        ip: res.srcIp,
         mask: res.mask,
         gateway: res.gateway,
         time: NaN,
@@ -463,7 +472,7 @@ class App extends React.Component<{}, State> {
       });
       this.timer = setInterval(this.getStatus, 1000);
 
-      this.notifyNat("运行成功", res.nat);
+      this.notifyTest("运行成功", res.nat, res.remoteIp);
       this.notifyNetwork();
     } catch (e) {
       this.setState({

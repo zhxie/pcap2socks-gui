@@ -68,8 +68,8 @@ fn main() {
                                     )?;
                                     thread::sleep(Duration::new(1, 0));
                                 }
-                                let nat = match ext::test_nat_type(proxy, auth.clone()) {
-                                    Ok(nat) => nat,
+                                let (ip, nat) = match ext::test_nat_type(proxy, auth.clone()) {
+                                    Ok((ip, nat)) => (ip, nat),
                                     Err(e) => {
                                         status.is_running.store(false, Ordering::Relaxed);
                                         return Err(e.into());
@@ -79,6 +79,10 @@ fn main() {
 
                                 Ok(TestResponse {
                                     nat: nat.to_string(),
+                                    ip: match ip {
+                                        Some(ip) => Some(ip.to_string()),
+                                        None => None,
+                                    },
                                 })
                             }
                         },
@@ -158,8 +162,8 @@ fn main() {
                                     )?;
                                     thread::sleep(Duration::new(1, 0));
                                 }
-                                let nat = match ext::test_nat_type(proxy, auth.clone()) {
-                                    Ok(nat) => nat,
+                                let (ip, nat) = match ext::test_nat_type(proxy, auth.clone()) {
+                                    Ok((ip, nat)) => (ip, nat),
                                     Err(e) => {
                                         status.is_running.store(false, Ordering::Relaxed);
                                         return Err(e.into());
@@ -198,7 +202,11 @@ fn main() {
                                 };
                                 Ok(RunResponse {
                                     nat: nat.to_string(),
-                                    ip: ip_str,
+                                    remote_ip: match ip {
+                                        Some(ip) => Some(ip.to_string()),
+                                        None => None,
+                                    },
+                                    src_ip: ip_str,
                                     mask: mask.to_string(),
                                     gateway: gw.to_string(),
                                 })

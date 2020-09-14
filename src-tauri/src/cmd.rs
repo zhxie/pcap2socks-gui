@@ -66,12 +66,15 @@ impl Interface {
 #[derive(Debug, Serialize)]
 pub struct TestResponse {
     pub nat: String,
+    pub ip: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RunResponse {
     pub nat: String,
-    pub ip: String,
+    pub remote_ip: Option<String>,
+    pub src_ip: String,
     pub mask: String,
     pub gateway: String,
 }

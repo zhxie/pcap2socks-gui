@@ -93,7 +93,10 @@ pub fn calc_mask(src: Ipv4Network, gw: Ipv4Addr) -> Ipv4Addr {
 
 const NAT_TYPE_TEST_TIMEOUT: u64 = 3000;
 
-pub fn test_nat_type(proxy: SocketAddrV4, auth: Option<(String, String)>) -> io::Result<NatType> {
+pub fn test_nat_type(
+    proxy: SocketAddrV4,
+    auth: Option<(String, String)>,
+) -> io::Result<(Option<Ipv4Addr>, NatType)> {
     let datagram = ninat::Datagram::bind(
         proxy,
         SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0),
@@ -113,9 +116,7 @@ pub fn test_nat_type(proxy: SocketAddrV4, auth: Option<(String, String)>) -> io:
     let server1 = ninat::lookup_host_v4("nncs1-lp1.n.n.srv.nintendo.net")?;
     let server2 = ninat::lookup_host_v4("nncs2-lp1.n.n.srv.nintendo.net")?;
 
-    let (_, nat) = ninat::nat_test(&rw1, &rw2, server1, server2)?;
-
-    Ok(nat)
+    ninat::nat_test(&rw1, &rw2, server1, server2)
 }
 
 pub struct Status {
