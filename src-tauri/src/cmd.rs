@@ -132,9 +132,11 @@ pub struct RunResponse {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GetStatusResponse {
     pub run: bool,
     pub latency: usize,
     pub upload: usize,
     pub download: usize,
+    pub download_latency: usize,
 }

@@ -180,7 +180,10 @@ fn main() {
                                     auth.clone(),
                                     Arc::clone(&status.is_running),
                                     Arc::clone(&status.upload),
+                                    Arc::clone(&status.upload_count),
                                     Arc::clone(&status.download),
+                                    Arc::clone(&status.download_count),
+                                    Arc::clone(&status.download_latency),
                                 ) {
                                     status.is_running.store(false, Ordering::Relaxed);
                                     return Err(e.into());
@@ -219,7 +222,10 @@ fn main() {
                                 status.is_running.store(false, Ordering::Relaxed);
                                 status.latency.store(0, Ordering::Relaxed);
                                 status.upload.store(0, Ordering::Relaxed);
+                                status.upload_count.store(0, Ordering::Relaxed);
                                 status.download.store(0, Ordering::Relaxed);
+                                status.download_count.store(0, Ordering::Relaxed);
+                                status.download_latency.store(0, Ordering::Relaxed);
 
                                 Ok(())
                             }
@@ -237,9 +243,15 @@ fn main() {
                                     latency: status.latency.load(Ordering::Relaxed),
                                     upload: status.upload.load(Ordering::Relaxed),
                                     download: status.download.load(Ordering::Relaxed),
+                                    download_latency: status
+                                        .download_latency
+                                        .load(Ordering::Relaxed),
                                 };
                                 status.upload.store(0, Ordering::Relaxed);
+                                status.upload_count.store(0, Ordering::Relaxed);
                                 status.download.store(0, Ordering::Relaxed);
+                                status.download_count.store(0, Ordering::Relaxed);
+                                status.download_latency.store(0, Ordering::Relaxed);
                                 Ok(response)
                             }
                         },

@@ -1400,14 +1400,13 @@ dependencies = [
 
 [[package]]
 name = "pcap2socks"
-version = "0.6.0-alpha"
-source = "git+https://github.com/zhxie/pcap2socks#37ef32eb982b12b8824f3035448bce8105d5d113"
+version = "0.6.0"
+source = "git+https://github.com/zhxie/pcap2socks#c4b9f47c3bf3132ae1a0978b7a76602e00ef484b"
 dependencies = [
  "async-socks5",
  "clap",
  "dns-lookup",
  "env_logger",
- "futures",
  "interfaces",
  "ipnetwork",
  "log 0.4.11",

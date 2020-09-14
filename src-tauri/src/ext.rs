@@ -122,7 +122,10 @@ pub struct Status {
     pub is_running: Arc<AtomicBool>,
     pub latency: Arc<AtomicUsize>,
     pub upload: Arc<AtomicUsize>,
+    pub upload_count: Arc<AtomicUsize>,
     pub download: Arc<AtomicUsize>,
+    pub download_count: Arc<AtomicUsize>,
+    pub download_latency: Arc<AtomicUsize>,
 }
 
 impl Status {
@@ -131,7 +134,10 @@ impl Status {
             is_running: Arc::new(AtomicBool::new(false)),
             latency: Arc::new(AtomicUsize::new(0)),
             upload: Arc::new(AtomicUsize::new(0)),
+            upload_count: Arc::new(AtomicUsize::new(0)),
             download: Arc::new(AtomicUsize::new(0)),
+            download_count: Arc::new(AtomicUsize::new(0)),
+            download_latency: Arc::new(AtomicUsize::new(0)),
         }
     }
 }
@@ -190,7 +196,10 @@ pub fn run_pcap2socks(
     auth: Option<(String, String)>,
     is_running: Arc<AtomicBool>,
     upload: Arc<AtomicUsize>,
+    upload_count: Arc<AtomicUsize>,
     download: Arc<AtomicUsize>,
+    download_count: Arc<AtomicUsize>,
+    latency: Arc<AtomicUsize>,
 ) -> io::Result<()> {
     let (tx, mut rx) = interface.open()?;
     let forwarder = Forwarder::new_monitored(
@@ -198,7 +207,9 @@ pub fn run_pcap2socks(
         mtu,
         interface.hardware_addr(),
         interface.ip_addr().unwrap(),
-        download,
+        Some(download),
+        Some(latency),
+        Some(download_count),
     );
     let mut redirector = Redirector::new(
         Arc::new(Mutex::new(forwarder)),
@@ -211,7 +222,7 @@ pub fn run_pcap2socks(
     let mut rt = Runtime::new()?;
     thread::spawn(move || {
         let is_running_cloned = Arc::clone(&is_running);
-        let _ = rt.block_on(redirector.open_monitored(&mut rx, is_running, upload));
+        let _ = rt.block_on(redirector.open_monitored(&mut rx, is_running, upload, upload_count));
         is_running_cloned.store(false, Ordering::Relaxed);
     });
 
