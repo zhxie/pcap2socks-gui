@@ -1,5 +1,3 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
-
 import React from "react";
 import { ConfigProvider } from "antd";
 import { notification, Layout, Row, Col, Typography, Card, Statistic, Button, Tooltip } from "antd";
@@ -12,6 +10,7 @@ import {
   ExperimentOutlined,
   PlayCircleOutlined,
   RightOutlined,
+  GlobalOutlined,
   PoweroffOutlined,
 } from "@ant-design/icons";
 import {
@@ -796,9 +795,6 @@ class App extends React.Component<{}, State> {
                   }
                 })()}
               </Title>
-              <Paragraph type="secondary">
-                <a onClick={this.notifyNetwork}>网络设置</a>
-              </Paragraph>
             </Paragraph>
           </Col>
         </Row>
@@ -911,7 +907,7 @@ class App extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_PROXY) {
                 return (
-                  <div>
+                  <span>
                     <Button
                       className="button"
                       disabled={this.state.loading > 0}
@@ -938,7 +934,7 @@ class App extends React.Component<{}, State> {
                     >
                       测试代理服务器
                     </Button>
-                  </div>
+                  </span>
                 );
               }
             })()}
@@ -994,17 +990,22 @@ class App extends React.Component<{}, State> {
             {(() => {
               if (this.state.stage === STAGE_RUNNING) {
                 return (
-                  <Button
-                    className="button"
-                    type="primary"
-                    danger
-                    disabled={this.state.loading > 0 && this.state.loading !== 4}
-                    loading={this.state.loading === 4}
-                    icon={<PoweroffOutlined />}
-                    onClick={this.stop}
-                  >
-                    停止
-                  </Button>
+                  <span>
+                    <Button className="button" icon={<GlobalOutlined />} onClick={this.notifyNetwork}>
+                      显示网络设置
+                    </Button>
+                    <Button
+                      className="button"
+                      type="primary"
+                      danger
+                      disabled={this.state.loading > 0 && this.state.loading !== 4}
+                      loading={this.state.loading === 4}
+                      icon={<PoweroffOutlined />}
+                      onClick={this.stop}
+                    >
+                      停止
+                    </Button>
+                  </span>
                 );
               }
             })()}
