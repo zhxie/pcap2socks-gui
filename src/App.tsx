@@ -61,6 +61,24 @@ const ipc = async (args: any): Promise<any> => {
   }
 };
 
+const race = <T extends any>(promise: Promise<T>, ms: number): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error("promise timeout"));
+    }, ms);
+    promise.then(
+      (res) => {
+        clearTimeout(timeoutId);
+        resolve(res);
+      },
+      (err) => {
+        clearTimeout(timeoutId);
+        reject(err);
+      }
+    );
+  });
+};
+
 const natTypes = new Map([
   ["A", "开放 (A, 1)"],
   ["B", "中等 (B, 2)"],
@@ -271,23 +289,51 @@ class App extends React.Component<{}, State> {
     }
   };
 
-  notifyTest = (title: string, nat: string, ip: string) => {
+  lookup = async (ip: string) => {
+    const init = {
+      method: "GET",
+    };
+    try {
+      const res = await race(fetch("http://ip-api.com/json/" + ip, init), 1000);
+      const json = await res.json();
+
+      return json.country + " " + json.regionName + " " + json.city;
+    } catch {
+      return "";
+    }
+  };
+
+  notifyTest = async (title: string, nat: string, ip: string) => {
     const natStr = natTypes.get(nat) ?? nat;
+    let region = "";
+    if (ip) {
+      region = await this.lookup(ip);
+    }
     notification.success({
       message: title,
       description: (
         <div>
-          {(() => {
-            if (ip) {
-              return (
-                <Paragraph style={{ marginBottom: "0" }}>
-                  代理服务器的 IP 为 <Text strong>{ip}</Text>，
-                </Paragraph>
-              );
-            }
-          })()}
           <Paragraph style={{ marginBottom: "0" }}>
-            代理服务器的 NAT 类型为 <Text strong>{natStr}</Text>。
+            代理服务器的{" "}
+            {(() => {
+              if (ip) {
+                return (
+                  <Text>
+                    IP 为{" "}
+                    <Text strong>
+                      {ip}
+                      {(() => {
+                        if (region) {
+                          return " (" + region + ")";
+                        }
+                      })()}
+                    </Text>
+                    ，
+                  </Text>
+                );
+              }
+            })()}
+            NAT 类型为 <Text strong>{natStr}</Text>。
           </Paragraph>
         </div>
       ),
@@ -385,9 +431,9 @@ class App extends React.Component<{}, State> {
 
     try {
       let res: { nat: string; ip: string } = await ipc({ cmd: "test", payload: payload });
-      this.setState({ loading: 0 });
+      await this.notifyTest("测试代理服务器成功", res.nat, res.ip);
 
-      this.notifyTest("测试代理服务器成功", res.nat, res.ip);
+      this.setState({ loading: 0 });
     } catch (e) {
       this.setState({ loading: 0, ready: false });
       notification.error({
@@ -452,6 +498,8 @@ class App extends React.Component<{}, State> {
         payload: payload,
       });
 
+      await this.notifyTest("运行成功", res.nat, res.remoteIp);
+
       this.setState({
         stage: STAGE_RUNNING,
         loading: 0,
@@ -472,7 +520,6 @@ class App extends React.Component<{}, State> {
       });
       this.timer = setInterval(this.getStatus, 1000);
 
-      this.notifyTest("运行成功", res.nat, res.remoteIp);
       this.notifyNetwork();
     } catch (e) {
       this.setState({
