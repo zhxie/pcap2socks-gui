@@ -1130,7 +1130,7 @@ class App extends React.Component<{}, State> {
           if (exist) {
             this.setState({
               interface: inter.interface,
-              mtu: inter.mtu,
+              mtu: Math.min(1500, inter.mtu),
               ready: ready === 2,
             });
           } else {
