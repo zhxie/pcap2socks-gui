@@ -30,7 +30,7 @@ import RowInput from "./components/RowInput";
 import RowSwitch from "./components/RowSwitch";
 import Interface from "./models/Interface";
 import { presets, Device } from "./models/Device";
-import Proxy from "./models/Proxy";
+import { protocols, Proxy } from "./models/Proxy";
 import Convert from "./utils/Convert";
 
 const { Content } = Layout;
@@ -116,11 +116,11 @@ type State = {
   source: string;
   publish: string;
   // Proxy
+  protocol: number;
   destination: string;
   authentication: boolean;
   username: string;
   password: string;
-  extra: string;
 };
 
 class App extends React.Component<{}, State> {
@@ -156,11 +156,11 @@ class App extends React.Component<{}, State> {
       source: "10.6.0.1",
       publish: "10.6.0.2",
       // Proxy
+      protocol: 0,
       destination: "localhost:1080",
       authentication: false,
       username: "",
       password: "",
-      extra: "",
     };
   }
 
@@ -177,11 +177,11 @@ class App extends React.Component<{}, State> {
         }
 
         this.setState({
+          protocol: proxy.protocol,
           destination: proxy.destination,
           authentication: proxy.authentication,
           username: proxy.username,
           password: proxy.password,
-          extra: proxy.extra,
         });
       } catch (e) {
         notification.error({
@@ -420,11 +420,11 @@ class App extends React.Component<{}, State> {
     }
 
     const payload = {
+      protocol: proxy.protocol,
       destination: proxy.destination,
       authentication: proxy.authentication,
       username: proxy.username,
       password: proxy.password,
-      extra: proxy.extra,
     };
 
     this.setState({ loading: 2 });
@@ -483,11 +483,11 @@ class App extends React.Component<{}, State> {
       preset: device.preset,
       source: device.source,
       publish: device.publish,
+      protocol: proxy.protocol,
       destination: proxy.destination,
       authentication: proxy.authentication,
       username: proxy.username,
       password: proxy.password,
-      extra: proxy.extra,
     };
 
     this.setState({ loading: 3 });
@@ -775,49 +775,55 @@ class App extends React.Component<{}, State> {
         </Row>
         <Row className="content-content-row" gutter={[16, 0]} justify="center">
           <Col className="content-content-col" xs={24} sm={18} md={12}>
+            <RowSelect
+              label="协议"
+              options={protocols}
+              value={this.state.protocol}
+              onChange={(value) => this.setState({ protocol: Number(value) })}
+            />
             <RowInput
-              label="代理地址"
+              label="服务器地址"
               value={this.state.destination}
               onChange={(value) => {
                 this.setState({ destination: value });
               }}
             />
-            <RowSwitch
-              label="代理认证"
-              value={this.state.authentication}
-              onChange={(value) => this.setState({ authentication: value })}
-            />
             {(() => {
-              if (this.state.authentication) {
+              if (this.state.protocol === 0) {
                 return (
                   <div>
-                    <RowInput
-                      label="用户名"
-                      value={this.state.username}
-                      onChange={(value) => {
-                        this.setState({ username: value });
-                      }}
+                    <RowSwitch
+                      label="认证"
+                      value={this.state.authentication}
+                      onChange={(value) => this.setState({ authentication: value })}
                     />
-                    <RowInput
-                      label="密码"
-                      password
-                      value={this.state.password}
-                      onChange={(value) => {
-                        this.setState({ password: value });
-                      }}
-                    />
+                    {(() => {
+                      if (this.state.authentication) {
+                        return (
+                          <div>
+                            <RowInput
+                              label="用户名"
+                              value={this.state.username}
+                              onChange={(value) => {
+                                this.setState({ username: value });
+                              }}
+                            />
+                            <RowInput
+                              label="密码"
+                              password
+                              value={this.state.password}
+                              onChange={(value) => {
+                                this.setState({ password: value });
+                              }}
+                            />
+                          </div>
+                        );
+                      }
+                    })()}
                   </div>
                 );
               }
             })()}
-            <RowInput
-              label="高级选项"
-              valueTooltip="如果你不清楚高级选项，请留空"
-              value={this.state.extra}
-              onChange={(value) => {
-                this.setState({ extra: value });
-              }}
-            />
           </Col>
         </Row>
         <Row gutter={[16, 16]} justify="center"></Row>
@@ -1108,11 +1114,11 @@ class App extends React.Component<{}, State> {
       const proxy = Proxy.parse(proxyText);
       if (proxy) {
         this.setState({
+          protocol: proxy.protocol,
           destination: proxy.destination,
           authentication: proxy.authentication,
           username: proxy.username,
           password: proxy.password,
-          extra: proxy.extra,
         });
         ready++;
       }

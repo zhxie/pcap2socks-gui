@@ -1,20 +1,25 @@
+const protocols = [
+  { label: "SOCKS5", value: 0 },
+  { label: "Shadowsocks", value: 1 },
+];
+
 class Proxy {
+  public protocol: number;
   public destination: string;
   public authentication: boolean;
   public username: string;
   public password: string;
-  public extra: string;
 
-  constructor(destination: string, authentication: boolean, username: string, password: string, extra: string) {
+  constructor(protocol: number, destination: string, authentication: boolean, username: string, password: string) {
+    this.protocol = protocol;
     this.destination = destination;
     this.authentication = authentication;
     this.username = username;
     this.password = password;
-    this.extra = extra;
   }
 
   validate = () => {
-    if (this.destination.length === 0) {
+    if (!Number.isInteger(this.protocol) || this.protocol < 0 || this.protocol > 1 || this.destination.length === 0) {
       return false;
     }
 
@@ -23,13 +28,13 @@ class Proxy {
 
   static from = (data: any) => {
     if (
+      typeof data.protocol === "number" &&
       typeof data.destination === "string" &&
       typeof data.authentication === "boolean" &&
       typeof data.username === "string" &&
-      typeof data.password === "string" &&
-      typeof data.extra === "string"
+      typeof data.password === "string"
     ) {
-      const proxy = new Proxy(data.destination, data.authentication, data.username, data.password, data.extra);
+      const proxy = new Proxy(data.protocol, data.destination, data.authentication, data.username, data.password);
 
       return proxy.validate() ? proxy : null;
     } else {
@@ -49,15 +54,15 @@ class Proxy {
 
   stringify = () => {
     const data = {
+      protocol: this.protocol,
       destination: this.destination,
       authentication: this.authentication,
       username: this.username,
       password: this.password,
-      extra: this.extra,
     };
 
     return JSON.stringify(data, undefined, 2);
   };
 }
 
-export default Proxy;
+export {protocols, Proxy};
