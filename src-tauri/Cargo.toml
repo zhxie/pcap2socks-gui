@@ -17,6 +17,7 @@ dnsping = "0.2.0"
 ipnetwork = "0.16.0"
 ninat = "0.1.0"
 pcap2socks = { git = "https://github.com/zhxie/pcap2socks" }
+rand = "0.7.3"
 serde_json = "1.0"
 serde = { version = "1.0", features = [ "derive" ] }
 shadowsocks-rust = { version = "1.8.15", default-features = false, features = [ "ring-aead-ciphers", "sodium", "rc4", "aes-cfb", "aes-ctr" ] }

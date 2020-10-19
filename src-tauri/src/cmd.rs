@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub struct TestPayload {
+    pub protocol: usize,
     pub destination: String,
     pub authentication: bool,
     pub username: String,
     pub password: String,
-    pub extra: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -16,11 +16,11 @@ pub struct RunPayload {
     pub preset: usize,
     pub source: String,
     pub publish: String,
+    pub protocol: usize,
     pub destination: String,
     pub authentication: bool,
     pub username: String,
     pub password: String,
-    pub extra: String,
 }
 
 #[derive(Debug, Deserialize)]

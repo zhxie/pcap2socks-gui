@@ -1427,6 +1427,7 @@ dependencies = [
  "ipnetwork",
  "ninat",
  "pcap2socks",
+ "rand",
  "serde",
  "serde_json",
  "shadowsocks-rust",

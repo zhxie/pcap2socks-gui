@@ -3,6 +3,7 @@ use ipnetwork::Ipv4Network;
 use ninat::{self, NatType, RW as _};
 use pcap2socks::pcap::Interface;
 use pcap2socks::{Forwarder, ProxyConfig, Redirector};
+use rand::Rng;
 use shadowsocks::{self, ClientConfig, Config, ConfigType, Mode, ServerConfig};
 use std::collections::VecDeque;
 use std::io;
@@ -66,6 +67,14 @@ pub fn resolve_addr(addr: &str) -> io::Result<SocketAddrV4> {
         }
         None => Err(io::Error::from(io::ErrorKind::InvalidInput)),
     };
+}
+
+pub fn random_local_addr() -> SocketAddrV4 {
+    let mut rng = rand::thread_rng();
+    let port = rng.gen_range(32768, 65536);
+    let port = port as u16;
+
+    SocketAddrV4::new(Ipv4Addr::LOCALHOST, port)
 }
 
 pub fn calc_mask(src: Ipv4Network, gw: Ipv4Addr) -> Ipv4Addr {

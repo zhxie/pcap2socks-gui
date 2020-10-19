@@ -52,21 +52,33 @@ fn main() {
                         {
                             let status = Arc::clone(&status);
                             move || {
-                                let proxy = ext::resolve_addr(payload.destination.as_str())?;
-                                let auth = match payload.authentication {
-                                    true => Some((payload.username, payload.password)),
-                                    false => None,
+                                let (proxy, auth) = match payload.protocol {
+                                    0 => {
+                                        let proxy =
+                                            ext::resolve_addr(payload.destination.as_str())?;
+                                        let auth = match payload.authentication {
+                                            true => Some((payload.username, payload.password)),
+                                            false => None,
+                                        };
+
+                                        (proxy, auth)
+                                    }
+                                    1 => (ext::random_local_addr(), None),
+                                    _ => unreachable!(),
                                 };
 
                                 // Proxy
                                 status.is_running.store(true, Ordering::Relaxed);
-                                if !payload.extra.is_empty() {
-                                    ext::run_shadowsocks(
-                                        payload.extra.as_str(),
-                                        proxy,
-                                        Arc::clone(&status.is_running),
-                                    )?;
-                                    thread::sleep(Duration::new(1, 0));
+                                match payload.protocol {
+                                    1 => {
+                                        ext::run_shadowsocks(
+                                            payload.destination.as_str(),
+                                            proxy,
+                                            Arc::clone(&status.is_running),
+                                        )?;
+                                        thread::sleep(Duration::new(1, 0));
+                                    }
+                                    _ => {}
                                 }
                                 let (ip, nat) = match ext::test_nat_type(proxy, auth.clone()) {
                                     Ok((ip, nat)) => (ip, nat),
@@ -99,10 +111,19 @@ fn main() {
                             let status = Arc::clone(&status);
                             move || {
                                 // Proxy
-                                let proxy = ext::resolve_addr(payload.destination.as_str())?;
-                                let auth = match payload.authentication {
-                                    true => Some((payload.username, payload.password)),
-                                    false => None,
+                                let (proxy, auth) = match payload.protocol {
+                                    0 => {
+                                        let proxy =
+                                            ext::resolve_addr(payload.destination.as_str())?;
+                                        let auth = match payload.authentication {
+                                            true => Some((payload.username, payload.password)),
+                                            false => None,
+                                        };
+
+                                        (proxy, auth)
+                                    }
+                                    1 => (ext::random_local_addr(), None),
+                                    _ => unreachable!(),
                                 };
 
                                 // Interface
@@ -154,13 +175,16 @@ fn main() {
                                 status.outer_latency.store(0, Ordering::Relaxed);
                                 status.upload.store(0, Ordering::Relaxed);
                                 status.download.store(0, Ordering::Relaxed);
-                                if !payload.extra.is_empty() {
-                                    ext::run_shadowsocks(
-                                        payload.extra.as_str(),
-                                        proxy,
-                                        Arc::clone(&status.is_running),
-                                    )?;
-                                    thread::sleep(Duration::new(1, 0));
+                                match payload.protocol {
+                                    1 => {
+                                        ext::run_shadowsocks(
+                                            payload.destination.as_str(),
+                                            proxy,
+                                            Arc::clone(&status.is_running),
+                                        )?;
+                                        thread::sleep(Duration::new(1, 0));
+                                    }
+                                    _ => {}
                                 }
                                 let (ip, nat) = match ext::test_nat_type(proxy, auth.clone()) {
                                     Ok((ip, nat)) => (ip, nat),
