@@ -1,8 +1,9 @@
 import React from "react";
 import { ConfigProvider } from "antd";
-import { notification, Layout, Row, Col, Typography, Card, Statistic, Button, Tooltip } from "antd";
+import { notification, Modal, Layout, Row, Col, Typography, Card, Statistic, Button, Tooltip } from "antd";
 import zhCN from "antd/es/locale/zh_CN";
 import {
+  ExclamationCircleOutlined,
   LeftOutlined,
   ReloadOutlined,
   FolderOpenOutlined,
@@ -35,6 +36,7 @@ import Convert from "./utils/Convert";
 
 const { Content } = Layout;
 const { Paragraph, Title, Text } = Typography;
+const { confirm } = Modal;
 
 const STAGE_WELCOME: number = 0;
 const STAGE_INTERFACE: number = 1;
@@ -544,6 +546,21 @@ class App extends React.Component<{}, State> {
         description: e.message,
       });
     }
+  };
+
+  stopConfirm = () => {
+    notification.close("network");
+
+    const stop = this.stop;
+    confirm({
+      title: "停止运行",
+      icon: <ExclamationCircleOutlined />,
+      content: "停止运行可能会导致游戏掉线，确认要继续操作吗？",
+      onOk() {
+        return stop();
+      },
+      onCancel() {},
+    });
   };
 
   stop = async () => {
@@ -1078,7 +1095,7 @@ class App extends React.Component<{}, State> {
                     disabled={this.state.loading > 0 && this.state.loading !== 4}
                     loading={this.state.loading === 4}
                     icon={<PoweroffOutlined />}
-                    onClick={this.stop}
+                    onClick={this.stopConfirm}
                   >
                     停止
                   </Button>
