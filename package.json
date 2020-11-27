@@ -1,6 +1,6 @@
 {
   "name": "pcap2socks-gui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A front-end interface for pcap2socks.",
   "license": "MIT",
   "author": {

@@ -1,6 +1,6 @@
 [package]
 name = "pcap2socks-gui"
-version = "0.1.0"
+version = "0.2.0"
 authors = [ "Xie Zhihao <xzh1206@gmail.com>" ]
 edition = "2018"
 description = "A front-end interface for pcap2socks."
