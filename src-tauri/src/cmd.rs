@@ -23,33 +23,6 @@ pub struct RunPayload {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(tag = "cmd", rename_all = "camelCase")]
-pub enum Cmd {
-    ListInterfaces {
-        callback: String,
-        error: String,
-    },
-    Test {
-        payload: TestPayload,
-        callback: String,
-        error: String,
-    },
-    Run {
-        payload: RunPayload,
-        callback: String,
-        error: String,
-    },
-    Stop {
-        callback: String,
-        error: String,
-    },
-    GetStatus {
-        callback: String,
-        error: String,
-    },
-}
-
 #[derive(Debug, Serialize)]
 pub struct Interface {
     name: String,
@@ -84,8 +57,8 @@ pub struct RunResponse {
 pub struct GetStatusResponse {
     pub run: bool,
     pub latency: usize,
-    pub upload: usize,
+    pub upload_size: usize,
     pub upload_count: usize,
-    pub download: usize,
+    pub download_size: usize,
     pub download_count: usize,
 }

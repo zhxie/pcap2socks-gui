@@ -13,19 +13,20 @@
   "private": true,
   "homepage": "./",
   "dependencies": {
-    "@testing-library/jest-dom": "^4.2.4",
-    "@testing-library/react": "^9.3.2",
-    "@testing-library/user-event": "^7.1.2",
-    "@types/jest": "^24.0.0",
+    "@tauri-apps/api": "^1.0.0-beta.5",
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react": "^11.1.0",
+    "@testing-library/user-event": "^12.1.10",
+    "@types/jest": "^26.0.15",
     "@types/node": "^12.0.0",
-    "@types/react": "^16.9.0",
-    "@types/react-dom": "^16.9.0",
-    "antd": "^4.6.2",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
-    "react-scripts": "3.4.3",
-    "tauri": "^0.12.0",
-    "typescript": "~3.7.2"
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "antd": "^4.16.10",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-scripts": "4.0.3",
+    "typescript": "^4.1.2",
+    "web-vitals": "^1.0.1"
   },
   "scripts": {
     "start": "react-app-rewired start",
@@ -36,7 +37,10 @@
     "tauri": "tauri"
   },
   "eslintConfig": {
-    "extends": "react-app"
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
   "browserslist": {
     "production": [
@@ -47,14 +51,14 @@
     "development": [
       "last 1 chrome version",
       "last 1 firefox version",
-      "last 1 safari version",
-      "edge 14"
+      "last 1 safari version"
     ]
   },
   "devDependencies": {
-    "babel-plugin-import": "^1.13.0",
-    "cross-env": "^7.0.2",
+    "@tauri-apps/cli": "^1.0.0-beta.6",
+    "babel-plugin-import": "^1.13.3",
+    "cross-env": "^7.0.3",
     "customize-cra": "^1.0.0",
-    "react-app-rewired": "^2.1.6"
+    "react-app-rewired": "^2.1.8"
   }
 }

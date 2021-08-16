@@ -11,26 +11,22 @@ categories = [ "network-programming" ]
 default-run = "pcap2socks-gui"
 build = "src/build.rs"
 
+[build-dependencies]
+tauri-build = { version = "1.0.0-beta.3" }
+
 [dependencies]
-dns-lookup = "1.0.3"
+dns-lookup = "1.0.8"
 dnsping = "0.2.0"
-ipnetwork = "0.16.0"
+ipnetwork = "0.18.0"
 ninat = "0.1.0"
 pcap2socks = { git = "https://github.com/zhxie/pcap2socks" }
-rand = "0.7.3"
+rand = "0.8.4"
 serde_json = "1.0"
 serde = { version = "1.0", features = [ "derive" ] }
-shadowsocks-rust = { version = "1.8.15", default-features = false, features = [ "ring-aead-ciphers", "sodium", "rc4", "aes-cfb", "aes-ctr" ] }
-tauri = { version = "0.9", features = [ ] }
-tokio = { version = "0.2.22", default-features = false, features = [ "macros", "time" ] }
-
-[target."cfg(windows)".build-dependencies]
-winres = "0.1"
+shadowsocks-service = { version = "1.11.2", default-features = false, features = [ "local", "stream-cipher" ] }
+tauri = { version = "1.0.0-beta.5", features = [] }
+tokio = { version = "1.9.0", default-features = false, features = [ "time", "macros" ] }
 
 [features]
-embedded-server = [ "tauri/embedded-server" ]
-no-server = [ "tauri/no-server" ]
-
-[[bin]]
-name = "pcap2socks-gui"
-path = "src/main.rs"
+default = [ "custom-protocol" ]
+custom-protocol = [ "tauri/custom-protocol" ]

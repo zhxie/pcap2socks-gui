@@ -1,7 +1,5 @@
 import React from "react";
-import { ConfigProvider } from "antd";
 import { notification, Modal, Layout, Row, Col, Typography, Card, Statistic, Button, Tooltip } from "antd";
-import zhCN from "antd/es/locale/zh_CN";
 import {
   ExclamationCircleOutlined,
   LeftOutlined,
@@ -23,7 +21,7 @@ import {
   CheckCircleTwoTone,
 } from "@ant-design/icons";
 import { ClockCircleOutlined, HourglassOutlined, ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
-import { promisified } from "tauri/api/tauri";
+import { invoke } from "@tauri-apps/api/tauri";
 
 import "./App.css";
 import RowSelect from "./components/RowSelect";
@@ -33,6 +31,7 @@ import Interface from "./models/Interface";
 import { presets, Device } from "./models/Device";
 import { protocols, Proxy } from "./models/Proxy";
 import Convert from "./utils/Convert";
+import "./utils/Window";
 
 const { Content } = Layout;
 const { Paragraph, Title, Text } = Typography;
@@ -49,17 +48,17 @@ const TRAFFIC_DISPLAY_TRAFFIC_TOTAL: number = 1;
 const TRAFFIC_DISPLAY_PACKET: number = 2;
 const TRAFFIC_DISPLAY_PACKET_TOTAL: number = 3;
 
-const isTauri = !!window.__TAURI_INVOKE_HANDLER__;
-const ipc = async (args: any): Promise<any> => {
+const isTauri = !!window.__TAURI__;
+const ipc = async (cmd: string, args?: any): Promise<any> => {
   if (!isTauri) {
     throw new Error("请通过可执行文件启动 pcap2socks。");
   }
   try {
-    const result: string = await promisified(args);
+    const result: string = await invoke(cmd, args);
 
     return result;
   } catch (e) {
-    throw new Error(e);
+    throw new Error(e.message);
   }
 };
 
@@ -99,12 +98,12 @@ type State = {
   gateway: string;
   time: number;
   latency: number;
-  upload: number;
-  uploadTotal: number;
+  uploadSize: number;
+  uploadSizeTotal: number;
   uploadCount: number;
   uploadCountTotal: number;
-  download: number;
-  downloadTotal: number;
+  downloadSize: number;
+  downloadSizeTotal: number;
   downloadCount: number;
   downloadCountTotal: number;
   // Parameters
@@ -139,12 +138,12 @@ class App extends React.Component<{}, State> {
       gateway: "",
       time: NaN,
       latency: NaN,
-      upload: NaN,
-      uploadTotal: NaN,
+      uploadSize: NaN,
+      uploadSizeTotal: NaN,
       uploadCount: NaN,
       uploadCountTotal: NaN,
-      download: NaN,
-      downloadTotal: NaN,
+      downloadSize: NaN,
+      downloadSizeTotal: NaN,
       downloadCount: NaN,
       downloadCountTotal: NaN,
       // Parameters
@@ -234,9 +233,9 @@ class App extends React.Component<{}, State> {
   showUploadValue = () => {
     switch (this.state.trafficDisplay) {
       case TRAFFIC_DISPLAY_TRAFFIC:
-        return Convert.convertRate(this.state.upload);
+        return Convert.convertRate(this.state.uploadSize);
       case TRAFFIC_DISPLAY_TRAFFIC_TOTAL:
-        return Convert.convertThroughput(this.state.uploadTotal);
+        return Convert.convertThroughput(this.state.uploadSizeTotal);
       case TRAFFIC_DISPLAY_PACKET:
         return Convert.convertRate(this.state.uploadCount);
       case TRAFFIC_DISPLAY_PACKET_TOTAL:
@@ -249,9 +248,9 @@ class App extends React.Component<{}, State> {
   showUploadUnit = () => {
     switch (this.state.trafficDisplay) {
       case TRAFFIC_DISPLAY_TRAFFIC:
-        return Convert.convertBitrateUnit(this.state.upload);
+        return Convert.convertBitrateUnit(this.state.uploadSize);
       case TRAFFIC_DISPLAY_TRAFFIC_TOTAL:
-        return Convert.convertBitThroughputUnit(this.state.uploadTotal);
+        return Convert.convertBitThroughputUnit(this.state.uploadSizeTotal);
       case TRAFFIC_DISPLAY_PACKET:
         return Convert.convertPacketRateUnit(this.state.uploadCount);
       case TRAFFIC_DISPLAY_PACKET_TOTAL:
@@ -264,9 +263,9 @@ class App extends React.Component<{}, State> {
   showDownloadValue = () => {
     switch (this.state.trafficDisplay) {
       case TRAFFIC_DISPLAY_TRAFFIC:
-        return Convert.convertRate(this.state.download);
+        return Convert.convertRate(this.state.downloadSize);
       case TRAFFIC_DISPLAY_TRAFFIC_TOTAL:
-        return Convert.convertThroughput(this.state.downloadTotal);
+        return Convert.convertThroughput(this.state.downloadSizeTotal);
       case TRAFFIC_DISPLAY_PACKET:
         return Convert.convertRate(this.state.downloadCount);
       case TRAFFIC_DISPLAY_PACKET_TOTAL:
@@ -279,9 +278,9 @@ class App extends React.Component<{}, State> {
   showDownloadUnit = () => {
     switch (this.state.trafficDisplay) {
       case TRAFFIC_DISPLAY_TRAFFIC:
-        return Convert.convertBitrateUnit(this.state.download);
+        return Convert.convertBitrateUnit(this.state.downloadSize);
       case TRAFFIC_DISPLAY_TRAFFIC_TOTAL:
-        return Convert.convertBitThroughputUnit(this.state.downloadTotal);
+        return Convert.convertBitThroughputUnit(this.state.downloadSizeTotal);
       case TRAFFIC_DISPLAY_PACKET:
         return Convert.convertPacketRateUnit(this.state.downloadCount);
       case TRAFFIC_DISPLAY_PACKET_TOTAL:
@@ -391,7 +390,7 @@ class App extends React.Component<{}, State> {
     this.setState({ loading: 1 });
 
     try {
-      let interfaces: { name: string; alias: string; mtu: number }[] = await ipc({ cmd: "listInterfaces" });
+      let interfaces: { name: string; alias: string; mtu: number }[] = await ipc("list_interfaces");
       if (interfaces.length <= 0) {
         this.setState({ loading: 0, ready: false, interfaces: [], interface: "" });
         notification.error({
@@ -432,7 +431,7 @@ class App extends React.Component<{}, State> {
     this.setState({ loading: 2 });
 
     try {
-      let res: { nat: string; ip: string } = await ipc({ cmd: "test", payload: payload });
+      let res: { nat: string; ip: string } = await ipc("test", { payload: payload });
       await this.notifyTest("测试代理服务器成功", res.nat, res.ip);
 
       this.setState({ loading: 0 });
@@ -495,10 +494,7 @@ class App extends React.Component<{}, State> {
     this.setState({ loading: 3 });
 
     try {
-      let res: { nat: string; remoteIp: string; srcIp: string; mask: string; gateway: string } = await ipc({
-        cmd: "run",
-        payload: payload,
-      });
+      let res: { nat: string; remoteIp: string; srcIp: string; mask: string; gateway: string } = await ipc("run", { payload: payload });
 
       await this.notifyTest("运行成功", res.nat, res.remoteIp);
 
@@ -511,12 +507,12 @@ class App extends React.Component<{}, State> {
         gateway: res.gateway,
         time: NaN,
         latency: NaN,
-        upload: NaN,
-        uploadTotal: NaN,
+        uploadSize: NaN,
+        uploadSizeTotal: NaN,
         uploadCount: NaN,
         uploadCountTotal: NaN,
-        download: NaN,
-        downloadTotal: NaN,
+        downloadSize: NaN,
+        downloadSizeTotal: NaN,
         downloadCount: NaN,
         downloadCountTotal: NaN,
       });
@@ -532,12 +528,12 @@ class App extends React.Component<{}, State> {
         gateway: "",
         time: NaN,
         latency: NaN,
-        upload: NaN,
-        uploadTotal: NaN,
+        uploadSize: NaN,
+        uploadSizeTotal: NaN,
         uploadCount: NaN,
         uploadCountTotal: NaN,
-        download: NaN,
-        downloadTotal: NaN,
+        downloadSize: NaN,
+        downloadSizeTotal: NaN,
         downloadCount: NaN,
         downloadCountTotal: NaN,
       });
@@ -559,7 +555,7 @@ class App extends React.Component<{}, State> {
       onOk() {
         return stop();
       },
-      onCancel() {},
+      onCancel() { },
     });
   };
 
@@ -567,7 +563,7 @@ class App extends React.Component<{}, State> {
     this.setState({ loading: 4 });
 
     try {
-      await ipc({ cmd: "stop" });
+      await ipc("stop");
 
       this.setState({
         stage: STAGE_WELCOME,
@@ -577,12 +573,12 @@ class App extends React.Component<{}, State> {
         gateway: "",
         time: NaN,
         latency: NaN,
-        upload: NaN,
-        uploadTotal: NaN,
+        uploadSize: NaN,
+        uploadSizeTotal: NaN,
         uploadCount: NaN,
         uploadCountTotal: NaN,
-        download: NaN,
-        downloadTotal: NaN,
+        downloadSize: NaN,
+        downloadSizeTotal: NaN,
         downloadCount: NaN,
         downloadCountTotal: NaN,
       });
@@ -603,25 +599,25 @@ class App extends React.Component<{}, State> {
       let status: {
         run: boolean;
         latency: number;
-        upload: number;
+        uploadSize: number;
         uploadCount: number;
-        download: number;
+        downloadSize: number;
         downloadCount: number;
-      } = await ipc({ cmd: "getStatus" });
+      } = await ipc("get_status");
 
       this.setState({
         time: status.run ? (Number.isNaN(this.state.time) ? 1 : this.state.time + 1) : NaN,
         latency: status.latency > 1000 ? Infinity : status.latency,
-        upload: status.upload,
-        uploadTotal: Number.isNaN(this.state.uploadTotal) ? status.upload : this.state.uploadTotal + status.upload,
+        uploadSize: status.uploadSize,
+        uploadSizeTotal: Number.isNaN(this.state.uploadSizeTotal) ? status.uploadSize : this.state.uploadSizeTotal + status.uploadSize,
         uploadCount: status.uploadCount,
         uploadCountTotal: Number.isNaN(this.state.uploadCountTotal)
           ? status.uploadCount
           : this.state.uploadCountTotal + status.uploadCount,
-        download: status.download,
-        downloadTotal: Number.isNaN(this.state.downloadTotal)
-          ? status.download
-          : this.state.downloadTotal + status.download,
+        downloadSize: status.downloadSize,
+        downloadSizeTotal: Number.isNaN(this.state.downloadSizeTotal)
+          ? status.downloadSize
+          : this.state.downloadSizeTotal + status.downloadSize,
         downloadCount: status.downloadCount,
         downloadCountTotal: Number.isNaN(this.state.downloadCountTotal)
           ? status.downloadCount
@@ -1168,8 +1164,4 @@ class App extends React.Component<{}, State> {
   }
 }
 
-export default () => (
-  <ConfigProvider autoInsertSpaceInButton={false} locale={zhCN}>
-    <App />
-  </ConfigProvider>
-);
+export default App;
