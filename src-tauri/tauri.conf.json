@@ -11,7 +11,7 @@
   },
   "tauri": {
     "bundle": {
-      "active": false,
+      "active": true,
       "targets": "all",
       "identifier": "name.zhxie.pcap2socks",
       "icon": [
