@@ -6,7 +6,9 @@ use pcap2socks::stat::Traffic;
 use pcap2socks::{Forwarder, ProxyConfig, Redirector};
 use rand::Rng;
 use serde::Serialize;
-use shadowsocks_service::config::{self, Config, ConfigType};
+use shadowsocks_service::config::{Config, ConfigType, LocalConfig, ProtocolType};
+use shadowsocks_service::shadowsocks::config::{Mode, UrlParseError};
+use shadowsocks_service::shadowsocks::{ServerAddr, ServerConfig};
 use std::collections::VecDeque;
 use std::error;
 use std::fmt::{self, Display, Formatter};
@@ -66,8 +68,8 @@ impl From<ParseIntError> for Error {
     }
 }
 
-impl From<config::Error> for Error {
-    fn from(err: config::Error) -> Error {
+impl From<UrlParseError> for Error {
+    fn from(err: UrlParseError) -> Error {
         Error::new(err.to_string())
     }
 }
@@ -208,11 +210,19 @@ pub fn run_shadowsocks(
     local: SocketAddrV4,
     is_running: Arc<AtomicBool>,
 ) -> Result<()> {
-    let mut config = match Config::load_from_str(proxy, ConfigType::Local) {
+    let mut server_config = match ServerConfig::from_url(proxy) {
         Ok(config) => config,
         Err(e) => return Err(e.into()),
     };
-    // TODO: config
+    server_config.set_mode(Mode::TcpAndUdp);
+    let mut local_config = LocalConfig::new(
+        ServerAddr::SocketAddr(SocketAddr::V4(local)),
+        ProtocolType::Socks,
+    );
+    local_config.mode = Mode::TcpAndUdp;
+    let mut config = Config::new(ConfigType::Local);
+    config.server.push(server_config);
+    config.local.push(local_config);
 
     let rt = Runtime::new()?;
 
