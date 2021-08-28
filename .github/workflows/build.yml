@@ -26,6 +26,7 @@ jobs:
           Invoke-WebRequest -OutFile WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
           7z x WpdPack.zip
           cp WpdPack/Lib/x64/Packet.lib Packet.lib
+          vcpkg integrate install
         if: matrix.os == 'windows-latest'
       - name: Install dependencies
         run: yarn install
