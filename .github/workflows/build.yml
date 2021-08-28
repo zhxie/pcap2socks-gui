@@ -21,9 +21,7 @@ jobs:
       - name: Setup Yarn
         run: npm install -g yarn
       - name: Install dependencies
-        run: |
-          yarn install
-          cargo install tauri-bundler --force
+        run: yarn install
       - name: Build
         run: |
           yarn build
