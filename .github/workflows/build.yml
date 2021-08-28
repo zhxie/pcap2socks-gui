@@ -17,11 +17,14 @@ jobs:
     steps:
       - name: Setup Node.js
         uses: actions/setup-node@v2.4.0
+      - name: Setup Yarn
+        run: npm install -g yarn
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Download dependencies
         run: |
           Invoke-WebRequest -OutFile WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
@@ -29,11 +32,11 @@ jobs:
           cp WpdPack/Lib/x64/Packet.lib Packet.lib
         if: matrix.os == 'windows-latest'
       - name: Install dependencies
-        run: npm install
+        run: yarn install
       - name: Build
         run: |
-          npm run build
-          npm run tauri build
+          yarn build
+          yarn tauri build
       - name: Upload a build artifact
         uses: actions/upload-artifact@v2
         with:
