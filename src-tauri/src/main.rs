@@ -57,9 +57,12 @@ fn test(payload: TestPayload, status: tauri::State<Arc<Status>>) -> Result<TestR
     }
     let (ip, nat) = match ext::test_nat_type(proxy, auth.clone()) {
         Ok((ip, nat)) => (ip, nat),
-        Err(e) => {
+        Err(_) => {
             status.is_running.store(false, Ordering::Relaxed);
-            return Err(e.into());
+            return Ok(TestResponse {
+                nat: "X".to_string(),
+                ip: None,
+            });
         }
     };
     status.is_running.store(false, Ordering::Relaxed);
@@ -150,11 +153,8 @@ fn run(payload: RunPayload, status: tauri::State<Arc<Status>>) -> Result<RunResp
         _ => {}
     }
     let (ip, nat) = match ext::test_nat_type(proxy, auth.clone()) {
-        Ok((ip, nat)) => (ip, nat),
-        Err(e) => {
-            status.is_running.store(false, Ordering::Relaxed);
-            return Err(e.into());
-        }
+        Ok((ip, nat)) => (ip, nat.to_string()),
+        Err(_) => (None, "X".to_string()),
     };
     if let Err(e) = ext::run_pcap2socks(
         interface,
@@ -170,22 +170,19 @@ fn run(payload: RunPayload, status: tauri::State<Arc<Status>>) -> Result<RunResp
         status.is_running.store(false, Ordering::Relaxed);
         return Err(e.into());
     };
-    if let Err(e) = ext::ping(
+    let _ = ext::ping(
         proxy,
         auth.clone(),
         Arc::clone(&status.is_running),
         Arc::clone(&status.latency),
-    ) {
-        status.is_running.store(false, Ordering::Relaxed);
-        return Err(e.into());
-    };
+    );
 
     let ip_str = match src.size() {
         1 => src.network().to_string(),
         _ => format!("{} - {}", src.network(), src.broadcast()),
     };
     Ok(RunResponse {
-        nat: nat.to_string(),
+        nat,
         remote_ip: match ip {
             Some(ip) => Some(ip.to_string()),
             None => None,

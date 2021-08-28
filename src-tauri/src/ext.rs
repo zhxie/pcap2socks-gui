@@ -14,7 +14,7 @@ use std::io;
 use std::net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::num::ParseIntError;
 use std::result;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicIsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -187,7 +187,7 @@ pub fn test_nat_type(
 
 pub struct Status {
     pub is_running: Arc<AtomicBool>,
-    pub latency: Arc<AtomicUsize>,
+    pub latency: Arc<AtomicIsize>,
     pub upload: Traffic,
     pub download: Traffic,
 }
@@ -196,7 +196,7 @@ impl Status {
     pub fn new() -> Status {
         Status {
             is_running: Arc::new(AtomicBool::new(false)),
-            latency: Arc::new(AtomicUsize::new(0)),
+            latency: Arc::new(AtomicIsize::new(0)),
             upload: Traffic::new(),
             download: Traffic::new(),
         }
@@ -289,8 +289,9 @@ pub fn ping(
     proxy: SocketAddrV4,
     auth: Option<(String, String)>,
     is_running: Arc<AtomicBool>,
-    latency: Arc<AtomicUsize>,
+    latency: Arc<AtomicIsize>,
 ) -> Result<()> {
+    latency.store(-1, Ordering::Relaxed);
     let datagram = dnsping::Datagram::bind(
         SocketAddr::V4(proxy),
         SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0)),
@@ -314,10 +315,10 @@ pub fn ping(
             &host,
         ) {
             Ok((_, duration)) => {
-                latency.store(duration.as_millis() as usize, Ordering::Relaxed);
+                latency.store(duration.as_millis() as isize, Ordering::Relaxed);
             }
             Err(_) => {
-                latency.store(usize::MAX, Ordering::Relaxed);
+                latency.store(isize::MAX, Ordering::Relaxed);
             }
         }
     });

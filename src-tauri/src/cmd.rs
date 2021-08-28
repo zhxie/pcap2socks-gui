@@ -56,7 +56,7 @@ pub struct RunResponse {
 #[serde(rename_all = "camelCase")]
 pub struct GetStatusResponse {
     pub run: bool,
-    pub latency: usize,
+    pub latency: isize,
     pub upload_size: usize,
     pub upload_count: usize,
     pub download_size: usize,

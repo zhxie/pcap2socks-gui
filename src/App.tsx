@@ -86,6 +86,7 @@ const natTypes = new Map([
   ["C", "严格 (C ,3)"],
   ["D", "严格 (D, 3)"],
   ["F", "不可用 (F)"],
+  ["X", "未知"]
 ]);
 
 type State = {
@@ -607,7 +608,7 @@ class App extends React.Component<{}, State> {
 
       this.setState({
         time: status.run ? (Number.isNaN(this.state.time) ? 1 : this.state.time + 1) : NaN,
-        latency: status.latency > 1000 ? Infinity : status.latency,
+        latency: status.latency < 0 ? NaN : (status.latency > 1000 ? Infinity : status.latency),
         uploadSize: status.uploadSize,
         uploadSizeTotal: Number.isNaN(this.state.uploadSizeTotal) ? status.uploadSize : this.state.uploadSizeTotal + status.uploadSize,
         uploadCount: status.uploadCount,
