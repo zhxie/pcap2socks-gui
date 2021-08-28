@@ -11,28 +11,19 @@ jobs:
     strategy:
       matrix:
         os:
-          - windows-latest
           - macos-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Setup Node.js
         uses: actions/setup-node@v2.4.0
       - name: Setup Yarn
         run: npm install -g yarn
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Download dependencies
-        run: |
-          Invoke-WebRequest -OutFile WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
-          7z x WpdPack.zip
-          cp WpdPack/Lib/x64/Packet.lib Packet.lib
-        if: matrix.os == 'windows-latest'
       - name: Install dependencies
-        run: yarn install
+        run: |
+          yarn install
+          cargo install tauri-bundler --force
       - name: Build
         run: |
           yarn build
@@ -42,10 +33,3 @@ jobs:
         with:
           name: pcap2socks-gui-latest-${{ runner.os }}-amd64
           path: ./src-tauri/target/release/pcap2socks-gui
-        if: matrix.os != 'windows-latest'
-      - name: Update a build artifact (Windows)
-        uses: actions/upload-artifact@v2
-        with:
-          name: pcap2socks-gui-latest-${{ runner.os }}-amd64
-          path: ./src-tauri/target/release/pcap2socks-gui.exe
-        if: matrix.os == 'windows-latest'
