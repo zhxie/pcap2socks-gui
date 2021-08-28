@@ -20,6 +20,8 @@ jobs:
         uses: actions/setup-node@v2.4.0
       - name: Setup Yarn
         run: npm install -g yarn
+      - name: Setup Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
       - name: Install dependencies
         run: yarn install
       - name: Build
