@@ -33,4 +33,4 @@ jobs:
         with:
           name: pcap2socks-gui-latest-${{ runner.os }}-amd64
           path: |
-            ./src-tauri/target/release/bundle/dmg/pcap2socks-gui*.dmg
+            ./src-tauri/target/release/bundle/dmg/pcap2socks*.dmg
