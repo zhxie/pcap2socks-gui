@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         os:
+          - windows-latest
           - macos-latest
 
     steps:
@@ -22,6 +23,17 @@ jobs:
         run: npm install -g yarn
       - name: Setup Rust (nightly)
         uses: dtolnay/rust-toolchain@nightly
+      - name: Setup OpenSSL
+        run: |
+          vcpkg integrate install
+          vcpkg install openssl:x64-windows-static-md
+        if: matrix.os == 'windows-latest'
+      - name: Download WinPcap Developer Pack
+        run: |
+          Invoke-WebRequest -OutFile WpdPack.zip https://www.winpcap.org/install/bin/WpdPack_4_1_2.zip
+          7z x WpdPack.zip
+          cp WpdPack/Lib/x64/Packet.lib Packet.lib
+        if: matrix.os == 'windows-latest'
       - name: Install dependencies
         run: yarn install
       - name: Build
@@ -34,3 +46,4 @@ jobs:
           name: pcap2socks-gui-latest-${{ runner.os }}-amd64
           path: |
             ./src-tauri/target/release/bundle/dmg/pcap2socks*.dmg
+            ./src-tauri/target/release/bundle/
